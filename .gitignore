@@ -2,6 +2,11 @@
 
 # dependencies
 node_modules/
+.expo-shared/
+build/
+*.log
+*.tsbuildinfo
+.env
 
 # Expo
 .expo/
