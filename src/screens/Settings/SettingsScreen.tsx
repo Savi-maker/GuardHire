@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: 160,
-    height: 40,
+    height: 50,
   },
 });
 
