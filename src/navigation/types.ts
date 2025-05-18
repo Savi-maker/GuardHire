@@ -15,4 +15,5 @@ export type RootStackParamList = {
   Success: undefined;
   OrderHistory: undefined;
   HelpSupport: undefined;
+  Main: undefined;
 };
