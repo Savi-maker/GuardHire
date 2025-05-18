@@ -17,7 +17,7 @@ import ErrorScreen from './src/screens/Feedback/ErrorScreen';
 import SuccessScreen from './src/screens/Feedback/SuccessScreen';
 import OrderHistoryScreen from './src/screens/History/OrderHistoryScreen';
 import HelpSupportScreen from './src/screens/Support/HelpSupportScreen';
-
+import { ThemeProvider } from './src/screens/ThemeContext/ThemeContext';
 import { RootStackParamList } from './src/navigation/types';
 
 
@@ -27,6 +27,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
+    <ThemeProvider>
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />
@@ -47,5 +48,6 @@ export default function App() {
         <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+    </ThemeProvider>
   );
 }

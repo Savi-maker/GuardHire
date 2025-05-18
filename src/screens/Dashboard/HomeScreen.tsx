@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
-
+import { useTheme } from '../ThemeContext/ThemeContext';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const actions = [
@@ -26,18 +26,26 @@ const actions = [
 ];
 
 const HomeScreen: React.FC = () => {
+  const { theme } = useTheme();
+  const backgroundColor = theme === 'dark' ? '#303030' : '#ffffff';
+  const textColor = theme === 'dark' ? '#ffffff' : '#000000';
   const navigation = useNavigation<NavigationProp>();
 
   const renderItem = ({ item }: { item: typeof actions[0] }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate(item.route as any)}>
-      <Text style={styles.cardText}>{item.title}</Text>
-    </TouchableOpacity>
-  );
+  <TouchableOpacity
+    style={[styles.card, { backgroundColor: theme === 'dark' ? '#424242' : '#fff' }]}
+    onPress={() => navigation.navigate(item.route as any)}
+  >
+    <Text style={[styles.cardText, { color: textColor }]}>{item.title}</Text>
+  </TouchableOpacity>
+);
+
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Witaj w GuardHire 👋</Text>
-      <Text style={styles.subheader}>Co chcesz dzisiaj zrobić?</Text>
+      <View style={[styles.container, { backgroundColor }]}>
+      <Text style={[styles.header, { color: textColor }]}>Witaj w GuardHire 👋</Text>
+      <Text style={[styles.subheader, { color: textColor }]}>Co chcesz dzisiaj zrobić?</Text>
+
 
       <FlatList
         data={actions}
