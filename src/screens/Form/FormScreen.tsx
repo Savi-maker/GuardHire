@@ -1,6 +1,5 @@
 import React from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Box, Typography } from '@mui/material';
 
 interface FormInputs {
@@ -15,7 +14,10 @@ const FormScreen: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormInputs>();
-  const navigate = useNavigate();
+
+  const navigate = (path: string) => {
+    window.location.href = path;
+  };
 
   const onSubmit: SubmitHandler<FormInputs> = (data) => {
     console.log('Dane formularza:', data);
