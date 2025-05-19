@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/types';
 
 const dataActive = [
   { id: '1', name: 'Zlecenie A', status: 'Aktywne', date: '2024-05-01' },
@@ -17,6 +20,7 @@ type TabType = 'active' | 'history';
 const ListScreen: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<TabType>('active');
   const [selectedModule, setSelectedModule] = useState('Zlecenia');
+const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const renderItem = ({ item }: { item: typeof dataActive[0] }) => (
     <View style={styles.row}>
@@ -57,6 +61,11 @@ const ListScreen: React.FC = () => {
           <Ionicons name="list-outline" size={20} color="#007AFF" />
           <Text style={styles.moduleButtonText}>{selectedModule}</Text>
         </TouchableOpacity>
+
+ {/* Prawy przycisk - powrót do Home */}
+        <TouchableOpacity onPress={() => navigation.navigate('Main')}>
+          <Ionicons name="close" size={28} color="#FF3B30" />
+        </TouchableOpacity>
       </View>
 
       {/* Lista */}
@@ -91,6 +100,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 10,
