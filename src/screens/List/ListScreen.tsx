@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
+//TABELE MODUŁU Zlecenia
 const dataActive = [
   { id: '1', name: 'Zlecenie A', status: 'Aktywne', date: '2024-05-01' },
   { id: '2', name: 'Zlecenie B', status: 'Oczekujące', date: '2024-05-03' },
@@ -15,11 +16,28 @@ const dataHistory = [
   { id: '2', name: 'Zlecenie Y', status: 'Anulowane', date: '2024-04-21' },
 ];
 
+
+const dataContact = [
+  {id: '1', name: 'Janusz Kowalski', rate: '1', phone: '123456789'},
+  {id: '2', name: 'Sebastian Blok', rate: '3', phone: '123456789'}
+];
+
+const dataLastContact = [
+  {id: '1', name: 'Andrzej Box', rate: '9', phone: '123456789'},
+  {id: '2', name: 'Leon King', rate: '10', phone: '123456789'}
+];
+
+
+
+
 type TabType = 'active' | 'history';
 
 const ListScreen: React.FC = () => {
+  //INICJALIZACJA STANÓW TABEL
   const [currentTab, setCurrentTab] = useState<TabType>('active');
-  const [selectedModule, setSelectedModule] = useState('Zlecenia');
+const [ContactTab, setContactTab] = useState<'a' | 'b'>('a');
+
+  const [selectedModule, setSelectedModule] = useState<'Zlecenia' | 'Kontakty'>('Zlecenia');
 const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const renderItem = ({ item }: { item: typeof dataActive[0] }) => (
@@ -30,6 +48,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
     </View>
   );
 
+  //RENDER TABELI DO MODUŁU Zlecenia
   const renderTable = () => {
     const data = currentTab === 'active' ? dataActive : dataHistory;
     const title = currentTab === 'active' ? '🔹 Aktywne zlecenia' : '🔸 Historia zleceń';
@@ -53,40 +72,116 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
     );
   };
 
+//RENDER TABELI DO MODUŁU Test
+const renderTestTable = () => {
+  const data = ContactTab === 'a' ? dataContact: dataLastContact;
+  const title = ContactTab === 'a' ? '📄 Kontakty' : '📑 Najpopularniejsze kontakty';
+
+  return (
+    <>
+      <Text style={styles.sectionTitle}>{title}</Text>
+       <View style={styles.table}></View>
+       <View style={styles.header}>
+      <Text style={styles.headerCell}>Nazwa</Text>
+            <Text style={styles.headerCell}>Ocena</Text>
+            <Text style={styles.headerCell}>Numer</Text>
+            </View>
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <Text style={styles.cell}>{item.name}</Text>
+            <Text style={styles.cell}>{item.rate}</Text>
+            <Text style={styles.cell}>{item.phone}</Text>
+            
+          </View>
+        )}
+      />
+    </>
+  );
+};
+
+
+
+const renderModuleView = () => {
+  if (selectedModule === 'Zlecenia') {
+    return renderTable(); 
+  }
+
+  if (selectedModule === 'Kontakty') {
+    return renderTestTable();
+   
+  }
+
+  return null;
+};
+
+
+
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Pasek górny z przyciskiem wyboru */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.moduleButton}>
+        <TouchableOpacity 
+        style={styles.moduleButton}
+       onPress={() => setSelectedModule(prev => (prev === 'Zlecenia' ? 'Kontakty' : 'Zlecenia'))} >
           <Ionicons name="list-outline" size={20} color="#007AFF" />
           <Text style={styles.moduleButtonText}>{selectedModule}</Text>
         </TouchableOpacity>
 
- {/* Prawy przycisk - powrót do Home */}
+ {/* Powrót do głównego menu */}
         <TouchableOpacity onPress={() => navigation.navigate('Main')}>
           <Ionicons name="close" size={28} color="#FF3B30" />
         </TouchableOpacity>
       </View>
 
       {/* Lista */}
-      <View style={styles.contentContainer}>{renderTable()}</View>
 
-      {/* Dolna nawigacja */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={[styles.navButton, currentTab === 'active' && styles.navButtonActive]}
-          onPress={() => setCurrentTab('active')}
-        >
-          <Text style={styles.navText}>Aktywne</Text>
-        </TouchableOpacity>
+<View style={styles.contentContainer}>
+  {renderModuleView()}
+</View>
+{selectedModule === 'Zlecenia' && (
+  <View style={styles.bottomNav}>
+    <TouchableOpacity
+      style={[styles.navButton, currentTab === 'active' && styles.navButtonActive]}
+      onPress={() => setCurrentTab('active')}
+    >
+      <Text style={styles.navText}>Aktywne</Text>
+    </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.navButton, currentTab === 'history' && styles.navButtonActive]}
-          onPress={() => setCurrentTab('history')}
-        >
-          <Text style={styles.navText}>Historia</Text>
-        </TouchableOpacity>
-      </View>
+    <TouchableOpacity
+      style={[styles.navButton, currentTab === 'history' && styles.navButtonActive]}
+      onPress={() => setCurrentTab('history')}
+    >
+      <Text style={styles.navText}>Historia</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
+{selectedModule === 'Kontakty' && (
+  <View style={styles.bottomNav}>
+    <TouchableOpacity
+      style={[styles.navButton, ContactTab === 'a' && styles.navButtonActive]}
+      onPress={() => setContactTab('a')}
+    >
+      <Text style={styles.navText}>Kontakty</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.navButton, ContactTab === 'b' && styles.navButtonActive]}
+      onPress={() => setContactTab('b')}
+    >
+      <Text style={styles.navText}>Najpopularniejsze Kontakty</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
+
+
+
+
     </SafeAreaView>
   );
 };
@@ -166,4 +261,6 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 16,
   },
+
+
 });
