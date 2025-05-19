@@ -5,18 +5,18 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
-//TABELE MODUŁU Zlecenia
+//TABELE MODUŁU Zlecenia mockup
 const dataActive = [
-  { id: '1', name: 'Zlecenie A', status: 'Aktywne', date: '2024-05-01' },
-  { id: '2', name: 'Zlecenie B', status: 'Oczekujące', date: '2024-05-03' },
+  { id: '1', name: 'Warszawa Stadion', status: 'Aktywne', date: '2024-05-01' },
+  { id: '2', name: 'Kielce Stadion', status: 'Oczekujące', date: '2024-05-03' },
 ];
 
 const dataHistory = [
-  { id: '1', name: 'Zlecenie X', status: 'Zakończone', date: '2024-04-20' },
-  { id: '2', name: 'Zlecenie Y', status: 'Anulowane', date: '2024-04-21' },
+  { id: '1', name: 'Budka z kebabem', status: 'Zakończone', date: '2024-04-20' },
+  { id: '2', name: 'Politechnika Świętorzyska', status: 'Anulowane', date: '2024-04-21' },
 ];
 
-
+//TABELE MODUŁU Kontakty mockup
 const dataContact = [
   {id: '1', name: 'Janusz Kowalski', rate: '1', phone: '123456789'},
   {id: '2', name: 'Sebastian Blok', rate: '3', phone: '123456789'}
@@ -31,11 +31,13 @@ const dataLastContact = [
 
 
 type TabType = 'active' | 'history';
+type ContactTabType = 'contacts' | 'popular';
+
 
 const ListScreen: React.FC = () => {
   //INICJALIZACJA STANÓW TABEL
   const [currentTab, setCurrentTab] = useState<TabType>('active');
-const [ContactTab, setContactTab] = useState<'a' | 'b'>('a');
+const [ContactTab, setContactTab] = useState<ContactTabType>('contacts');
 
   const [selectedModule, setSelectedModule] = useState<'Zlecenia' | 'Kontakty'>('Zlecenia');
 const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -74,8 +76,8 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
 
 //RENDER TABELI DO MODUŁU Test
 const renderTestTable = () => {
-  const data = ContactTab === 'a' ? dataContact: dataLastContact;
-  const title = ContactTab === 'a' ? '📄 Kontakty' : '📑 Najpopularniejsze kontakty';
+  const data = ContactTab === 'contacts' ? dataContact: dataLastContact;
+  const title = ContactTab === 'contacts' ? '📄 Kontakty' : '📑 Najpopularniejsze kontakty';
 
   return (
     <>
@@ -122,7 +124,7 @@ const renderModuleView = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Pasek górny z przyciskiem wyboru */}
+      {/* Góra - wybór modułu */}
       <View style={styles.topBar}>
         <TouchableOpacity 
         style={styles.moduleButton}
@@ -131,13 +133,14 @@ const renderModuleView = () => {
           <Text style={styles.moduleButtonText}>{selectedModule}</Text>
         </TouchableOpacity>
 
- {/* Powrót do głównego menu */}
+ {/* Wyjście do ekranu głównego */}
         <TouchableOpacity onPress={() => navigation.navigate('Main')}>
           <Ionicons name="close" size={28} color="#FF3B30" />
         </TouchableOpacity>
       </View>
 
-      {/* Lista */}
+    
+      {/* Przyciski nawigujące - do sterowania widocznością tabel */}
 
 <View style={styles.contentContainer}>
   {renderModuleView()}
@@ -160,27 +163,24 @@ const renderModuleView = () => {
   </View>
 )}
 
+
 {selectedModule === 'Kontakty' && (
   <View style={styles.bottomNav}>
     <TouchableOpacity
-      style={[styles.navButton, ContactTab === 'a' && styles.navButtonActive]}
-      onPress={() => setContactTab('a')}
+      style={[styles.navButton, ContactTab === 'contacts' && styles.navButtonActive]}
+      onPress={() => setContactTab('contacts')}
     >
       <Text style={styles.navText}>Kontakty</Text>
     </TouchableOpacity>
 
     <TouchableOpacity
-      style={[styles.navButton, ContactTab === 'b' && styles.navButtonActive]}
-      onPress={() => setContactTab('b')}
+      style={[styles.navButton, ContactTab === 'popular' && styles.navButtonActive]}
+      onPress={() => setContactTab('popular')}
     >
       <Text style={styles.navText}>Najpopularniejsze Kontakty</Text>
     </TouchableOpacity>
   </View>
 )}
-
-
-
-
 
     </SafeAreaView>
   );
