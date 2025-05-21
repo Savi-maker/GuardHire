@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  SafeAreaView,
-  ImageBackground,
-  Modal,
-} from 'react-native';
+import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator,} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
+import { useNavigation, NavigationProp} from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
 
 interface CustomAlertProps {
@@ -21,60 +14,108 @@ interface CustomAlertProps {
   type: 'error' | 'success';
 }
 
-const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => (
-    <Modal
-        transparent
-        visible={visible}
-        animationType="fade"
-        onRequestClose={onClose}
-    >
-      <View style={modalStyles.overlay}>
-        <View style={modalStyles.modalContainer}>
-          <View style={[
-            modalStyles.header,
-            type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
-          ]}>
-            <Text style={modalStyles.title}>{title}</Text>
+type RootStackParamList = {
+  Login: undefined;
+  ResetPassword: undefined;
+  Register: undefined;
+  Main: undefined;
+};
+
+const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  return (
+      <Modal
+          transparent
+          visible={visible}
+          animationType="fade"
+          onRequestClose={onClose}
+      >
+        <View style={modalStyles.overlay}>
+          <View style={modalStyles.modalContainer}>
+            <View style={[
+              modalStyles.header,
+              type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
+            ]}>
+              <Text style={modalStyles.title}>{title}</Text>
+            </View>
+            <View style={modalStyles.body}>
+              <Text style={modalStyles.message}>{message}</Text>
+            </View>
+            <TouchableOpacity
+                style={[
+                  modalStyles.button,
+                  type === 'error' ? modalStyles.errorButton : modalStyles.successButton
+                ]}
+                onPress={() => {
+                  onClose();
+                  if (type === 'success') {
+                    navigation.navigate('Main');
+                  }
+                }}
+            >
+              <Text style={modalStyles.buttonText}>OK</Text>
+            </TouchableOpacity>
           </View>
-          <View style={modalStyles.body}>
-            <Text style={modalStyles.message}>{message}</Text>
-          </View>
-          <TouchableOpacity
-              style={[
-                modalStyles.button,
-                type === 'error' ? modalStyles.errorButton : modalStyles.successButton
-              ]}
-              onPress={onClose}
-          >
-            <Text style={modalStyles.buttonText}>OK</Text>
-          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
-);
+      </Modal>
+  );
+};
 
 const LoginScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [language, setLanguage] = useState<string>('pl');
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: false,
+    password: false
+  });
+
+  const [modalConfig, setModalConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'error' | 'success';
+  }>({
     title: '',
     message: '',
-    type: 'error' as 'error' | 'success'
+    type: 'error'
   });
+
+  const handleForgotPassword = () => {
+    navigation.navigate('ResetPassword');
+  };
+
+  const handleRegisterUser = () => {
+    navigation.navigate('Register');
+  };
 
   useEffect(() => {
     const loadLanguage = async () => {
-      const storedLang = await AsyncStorage.getItem('language');
-      if (storedLang) setLanguage(storedLang);
+      try {
+        const storedLang = await AsyncStorage.getItem('language');
+        if (storedLang) setLanguage(storedLang);
+      } catch (error) {
+        console.error('Błąd podczas wczytywania języka:', error);
+      }
     };
     loadLanguage();
   }, []);
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const changeLanguage = async (lang: string) => {
-    setLanguage(lang);
-    await AsyncStorage.setItem('language', lang);
+    try {
+      setLanguage(lang);
+      await AsyncStorage.setItem('language', lang);
+    } catch (error) {
+      console.error('Błąd podczas zmiany języka:', error);
+    }
   };
 
   const showModal = (title: string, message: string, type: 'error' | 'success') => {
@@ -82,57 +123,122 @@ const LoginScreen: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleLogin = () => {
-    if (!email && !password) {
-      showModal('Błąd', 'Proszę podać email i hasło', 'error');
-      return;
-    }
+  const handleLogin = async () => {
+    setErrors({
+      email: false,
+      password: false
+    });
+
+    let hasErrors = false;
 
     if (!email) {
-      showModal('Błąd', 'Proszę podać email', 'error');
-      return;
+      setErrors(prev => ({ ...prev, email: true }));
+      hasErrors = true;
     }
 
     if (!password) {
-      showModal('Błąd', 'Proszę podać hasło', 'error');
+      setErrors(prev => ({ ...prev, password: true }));
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      showModal('Błąd', 'Proszę wypełnić wszystkie pola', 'error');
       return;
     }
 
-    showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
+    if (!validateEmail(email)) {
+      setErrors(prev => ({ ...prev, email: true }));
+      showModal('Błąd', 'Nieprawidłowy format adresu email', 'error');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // TODO: Implementacja logiki logowania
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
+    } catch (error) {
+      showModal('Błąd', 'Wystąpił błąd podczas logowania', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
       <ImageBackground source={BackgroundImage} style={styles.background} resizeMode="cover">
         <SafeAreaView style={styles.container}>
+          <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => navigation.goBack()}
+              accessibilityLabel="Zamknij ekran logowania"
+          >
+            <Ionicons name="close" size={30} color="#000" />
+          </TouchableOpacity>
+
           <View style={styles.contentWrapper}>
             <View style={styles.content}>
               <Text style={styles.title}>Zaloguj się</Text>
 
               <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.email && styles.inputError
+                  ]}
                   placeholder="Email"
                   placeholderTextColor="#aaa"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    setErrors(prev => ({ ...prev, email: false }));
+                  }}
+                  accessibilityLabel="Pole email"
+                  accessibilityHint="Wprowadź swój adres email"
               />
 
               <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.password && styles.inputError
+                  ]}
                   placeholder="Hasło"
                   placeholderTextColor="#aaa"
                   secureTextEntry
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setErrors(prev => ({ ...prev, password: false }));
+                  }}
+                  accessibilityLabel="Pole hasło"
+                  accessibilityHint="Wprowadź swoje hasło"
               />
 
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginButtonText}>Zaloguj</Text>
+              <TouchableOpacity
+                  style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                  onPress={handleLogin}
+                  disabled={isLoading}
+                  accessibilityLabel="Przycisk zaloguj"
+              >
+                {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.loginButtonText}>Zaloguj</Text>
+                )}
               </TouchableOpacity>
 
-              <TouchableOpacity>
+              <TouchableOpacity
+                  onPress={handleForgotPassword}
+                  accessibilityLabel="Zapomniałeś hasła?"
+              >
                 <Text style={styles.forgotPassword}>Zapomniałeś hasła?</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                  onPress={handleRegisterUser}
+                  accessibilityLabel="Nie posiadasz konta? Zarejestruj się!"
+              >
+                <Text style={styles.forgotPassword}>Nie posiadasz konta? Zarejestruj się!</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -144,6 +250,7 @@ const LoginScreen: React.FC = () => {
                 style={styles.picker}
                 onValueChange={changeLanguage}
                 mode="dropdown"
+                accessibilityLabel="Wybór języka"
             >
               <Picker.Item label="Polski" value="pl" />
               <Picker.Item label="English" value="en" />
@@ -239,7 +346,7 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     justifyContent: 'center',
-    paddingTop: 100,
+    paddingTop: '50%',
   },
   content: {},
   title: {
@@ -258,12 +365,19 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderWidth: 1,
   },
+  inputError: {
+    borderColor: '#ff6b6b',
+    backgroundColor: '#fff0f0',
+  },
   loginButton: {
     backgroundColor: '#4A90E2',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
   loginButtonText: {
     color: '#fff',
@@ -291,6 +405,13 @@ const styles = StyleSheet.create({
     height: 50,
     backgroundColor: '#e0e0e0',
     borderRadius: 8,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
   },
 });
 
