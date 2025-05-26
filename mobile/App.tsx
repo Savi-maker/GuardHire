@@ -5,6 +5,7 @@ import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import ResetPasswordScreen from './src/screens/Auth/ResetPasswordScreen';
 import UserProfileScreen from './src/screens/Profile/UserProfileScreen';
+import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
 import SettingsScreen from './src/screens/Settings/SettingsScreen';
 import ListScreen from './src/screens/List/ListScreen';
 import DetailScreen from './src/screens/Details/DetailScreen';
@@ -36,6 +37,7 @@ export default function App() {
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="List" component={ListScreen} />
             <Stack.Screen name="Detail" component={DetailScreen} />
