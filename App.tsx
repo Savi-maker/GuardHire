@@ -12,6 +12,7 @@ import SearchScreen from './src/screens/Search/SearchScreen';
 import NotificationsScreen from './src/screens/Notifications/NotificationsScreen';
 import FormScreen from './src/screens/Form/FormScreen';
 import PaymentScreen from './src/screens/Payment/PaymentScreen';
+import TransactionDetailsScreen from './src/screens/Payment/TransactionDetails';
 import ErrorScreen from './src/screens/Feedback/ErrorScreen';
 import SuccessScreen from './src/screens/Feedback/SuccessScreen';
 import OrderHistoryScreen from './src/screens/History/OrderHistoryScreen';
@@ -37,12 +38,13 @@ export default function App() {
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="List" component={ListScreen} />
+            <Stack.Screen name="List" component={ListScreen}/>
             <Stack.Screen name="Detail" component={DetailScreen} />
             <Stack.Screen name="Search" component={SearchScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Form" component={FormScreen} />
-            <Stack.Screen name="Payment" component={PaymentScreen} />
+            <Stack.Screen name="Payment" component={PaymentScreen} options={{headerShown: true}} />
+            <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} options={{headerShown: true}} />
             <Stack.Screen name="Error" component={ErrorScreen} />
             <Stack.Screen name="Success" component={SuccessScreen} />
             <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />

@@ -11,6 +11,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   Form: undefined;
   Payment: undefined;
+  TransactionDetails: { transactionId: string };
   Error: { message?: string };
   Success: undefined;
   OrderHistory: undefined;
