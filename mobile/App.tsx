@@ -13,7 +13,8 @@ import SearchScreen from './src/screens/Search/SearchScreen';
 import NotificationsScreen from './src/screens/Notifications/NotificationsScreen';
 import FormScreen from './src/screens/Form/FormScreen';
 import PaymentScreen from './src/screens/Payment/PaymentScreen';
-import ErrorScreen from './src/screens/Feedback/ErrorScreen';
+import { ErrorProvider } from './src/screens/Feedback/ErrorContext';
+import ErrorOverlay from './src/screens/Feedback/ErrorOverlay';
 import SuccessScreen from './src/screens/Feedback/SuccessScreen';
 import OrderHistoryScreen from './src/screens/History/OrderHistoryScreen';
 import HelpSupportScreen from './src/screens/Support/HelpSupportScreen';
@@ -29,29 +30,31 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Main" component={BottomTabNavigator} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-            <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="List" component={ListScreen} />
-            <Stack.Screen name="Detail" component={DetailScreen} />
-            <Stack.Screen name="Search" component={SearchScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
-            <Stack.Screen name="Form" component={FormScreen} />
-            <Stack.Screen name="Payment" component={PaymentScreen} />
-            <Stack.Screen name="Error" component={ErrorScreen} />
-            <Stack.Screen name="Success" component={SuccessScreen} />
-            <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
-            <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </ThemeProvider>
-    </SafeAreaProvider>
+  <ThemeProvider>
+    <ErrorProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Main" component={BottomTabNavigator} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="List" component={ListScreen} />
+          <Stack.Screen name="Detail" component={DetailScreen} />
+          <Stack.Screen name="Search" component={SearchScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="Form" component={FormScreen} />
+          <Stack.Screen name="Payment" component={PaymentScreen} />
+          <Stack.Screen name="Success" component={SuccessScreen} />
+          <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
+          <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+      <ErrorOverlay /> {/* renderuj nakładkę globalną */}
+    </ErrorProvider>
+  </ThemeProvider>
+</SafeAreaProvider>
   );
 }
