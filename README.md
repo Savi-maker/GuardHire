@@ -14,7 +14,7 @@ Pierwsza instalacja po pobraniu i załadowaniu rozszerzeń dla FrontEnd:
 
 Przejście do folderu:
 
--cd ./frontend
+-cd ./mobile
 
 -npm install
 
