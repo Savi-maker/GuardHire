@@ -31,7 +31,7 @@ cd ./backend
 
 -npm install
 
-Rozruch programu:
+Rozruch programu należy wykonać z folderu mobile i backend aby działay front i backend:
 
 -npm start
 

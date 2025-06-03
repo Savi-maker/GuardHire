@@ -46,6 +46,42 @@ db.serialize(() => {
   )
 `);
 });
+const defaultAdmin = {
+  imie: 'Admin',
+  nazwisko: 'Systemowy',
+  username: 'admin',
+  mail: 'admin@guardhire.pl',
+  numertelefonu: '123456789',
+  stanowisko: 'Administrator',
+  haslo: 'admin123', 
+  role: 'admin'
+};
+
+db.get('SELECT * FROM profiles WHERE username = ?', [defaultAdmin.username], async (err, user) => {
+  if (!user) {
+    const hashedPassword = await bcrypt.hash(defaultAdmin.haslo, 10);
+    db.run(
+      'INSERT INTO profiles (imie, nazwisko, username, mail, numertelefonu, stanowisko, haslo, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        defaultAdmin.imie,
+        defaultAdmin.nazwisko,
+        defaultAdmin.username,
+        defaultAdmin.mail,
+        defaultAdmin.numertelefonu,
+        defaultAdmin.stanowisko,
+        hashedPassword,
+        defaultAdmin.role
+      ],
+      (err) => {
+        if (err) {
+          console.error('Błąd przy dodawaniu admina:', err.message);
+        } else {
+          console.log('Dodano domyślnego admina');
+        }
+      }
+    );
+  }
+});
 
 // NEWS ENDPOINTS
 app.get('/news', (req, res) => {
