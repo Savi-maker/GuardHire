@@ -13,6 +13,7 @@ import SearchScreen from './src/screens/Search/SearchScreen';
 import NotificationsScreen from './src/screens/Notifications/NotificationsScreen';
 import FormScreen from './src/screens/Form/FormScreen';
 import PaymentScreen from './src/screens/Payment/PaymentScreen';
+import TransactionDetailsScreen from './src/screens/Payment/TransactionDetails';
 import { ErrorProvider } from './src/screens/Feedback/ErrorContext';
 import ErrorOverlay from './src/screens/Feedback/ErrorOverlay';
 import SuccessScreen from './src/screens/Feedback/SuccessScreen';
@@ -46,7 +47,8 @@ export default function App() {
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Form" component={FormScreen} />
-          <Stack.Screen name="Payment" component={PaymentScreen} />
+          <Stack.Screen name="Payment" component={PaymentScreen} options={{headerShown: true}} />
+          <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} options={{headerShown: true}} />
           <Stack.Screen name="Success" component={SuccessScreen} />
           <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
