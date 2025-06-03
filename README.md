@@ -34,3 +34,11 @@ cd ./backend
 Rozruch programu:
 
 -npm start
+
+W przypadku obsługi backendu na komórkach nalezy zmienic API_URL 
+Który znajduje sie w:
+mobile
+-src
+--utils
+---api.ts  //z const API_URL = "http://localhost:3000";
+localhost nalezy zamienic na swoje ip 

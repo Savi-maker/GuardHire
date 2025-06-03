@@ -154,7 +154,6 @@ const LoginScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Implementacja logiki logowania
       await new Promise(resolve => setTimeout(resolve, 1000));
       showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
     } catch (error) {

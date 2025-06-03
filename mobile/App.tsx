@@ -52,7 +52,7 @@ export default function App() {
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
         </Stack.Navigator>
       </NavigationContainer>
-      <ErrorOverlay /> {/* renderuj nakładkę globalną */}
+      <ErrorOverlay /> 
     </ErrorProvider>
   </ThemeProvider>
 </SafeAreaProvider>
