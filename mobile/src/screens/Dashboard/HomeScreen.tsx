@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../ThemeContext/ThemeContext';
-import { useError } from '../Feedback/ErrorContext'; // ← DODANE
+import { useError } from '../Feedback/ErrorContext'; 
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNews } from '../../utils/api';
@@ -17,7 +17,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { setError } = useError(); // ← DODANE
+  const { setError } = useError();
   const navigation = useNavigation<NavigationProp>();
   const backgroundColor = theme === 'dark' ? '#303030' : '#ffffff';
   const textColor = theme === 'dark' ? '#ffffff' : '#000000';
@@ -34,11 +34,7 @@ const HomeScreen: React.FC = () => {
     { id: '8', title: 'Szczegóły', route: 'Detail' },
     { id: '10', title: 'Formularz', route: 'Form' },
     { id: '11', title: 'Płatność', route: 'Payment' },
-    {
-      id: '12',
-      title: 'Błąd',
-      onPress: () => setError('To jest przykładowy komunikat błędu!')
-    },
+    { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
     { id: '13', title: 'Sukces', route: 'Success' },
     { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
   ];

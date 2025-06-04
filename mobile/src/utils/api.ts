@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = "http://192.168.1.111:3000";
+export const API_URL = "http://192.168.1.111:3000";
 
 // Pobierz token JWT z localStorage
 export async function getToken(): Promise<string | null> {
@@ -38,6 +38,7 @@ export async function registerProfile(data: {
   numertelefonu: string;
   stanowisko: string;
   haslo: string;
+  role:string;
 }) {
   const res = await fetch(`${API_URL}/profiles`, {
     method: 'POST',
@@ -75,6 +76,19 @@ export async function getProfiles() {
   return res.json();
 }
 
+// Zmianna Roli użytkownika
+export async function changeUserRole(id: number, role: string) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/profiles/${id}/role`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+    },
+    body: JSON.stringify({ role }),
+  });
+  return res.json();
+}
 
 
 
@@ -128,19 +142,23 @@ export async function getNotifications() {
 }
 
 // Dodaj powiadomienie
-export async function addNotification(title: string, description: string) {
-  const token = await getToken();
+export async function addNotification(title: string, description: string, type: string = 'info') {
   const res = await fetch(`${API_URL}/notifications`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-    },
-    body: JSON.stringify({ title, description })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description, type })
   });
   return res.json();
 }
 
+// Oznacz powiadomienie jako przeczytane
+export async function markNotificationAsRead(id: number) {
+  const res = await fetch(`${API_URL}/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return res.json();
+}
 
 
 

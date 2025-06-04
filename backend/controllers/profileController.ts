@@ -7,7 +7,7 @@ const SECRET = 'super_tajne_haslo';
 
 export const getProfiles = (req: Request, res: Response) => {
   db.all(
-    'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko FROM profiles',
+    'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko, role FROM profiles',
     [],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -69,4 +69,25 @@ export const getMyProfile = (req: Request, res: Response) => {
       res.json(user);
     }
   );
+};
+
+export const changeUserRole = (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  const allowedRoles = ['admin', 'headuser', 'user'];
+  if (!allowedRoles.includes(role)) {
+    res.status(400).json({ error: 'Nieprawidłowa rola' });
+    return;
+  }
+  db.run('UPDATE profiles SET role = ? WHERE id = ?', [role, id], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (this.changes === 0) {
+      res.status(404).json({ error: 'Nie znaleziono użytkownika' });
+      return;
+    }
+    res.json({ success: true, id, role });
+  });
 };
