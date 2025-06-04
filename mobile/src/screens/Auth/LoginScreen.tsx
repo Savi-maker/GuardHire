@@ -5,6 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
+import { login } from '../../utils/api';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -146,18 +147,22 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
-    if (!validateEmail(email)) {
-      setErrors(prev => ({ ...prev, email: true }));
-      showModal('Błąd', 'Nieprawidłowy format adresu email', 'error');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Rozpoczynam logowanie...');
+      const response = await login(email, password);  // funkcja login sama przekształci password na haslo
+      console.log('Odpowiedź z serwera:', response);
+
+      if (!response.success) {
+        showModal('Błąd', 'Nieprawidłowy email lub hasło', 'error'); // Lepszy komunikat błędu
+        setIsLoading(false);
+        return;
+      }
+
       showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
     } catch (error) {
-      showModal('Błąd', 'Wystąpił błąd podczas logowania', 'error');
+      console.error('Błąd podczas logowania:', error);
+      showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Sprawdź połączenie z internetem.', 'error');
     } finally {
       setIsLoading(false);
     }
