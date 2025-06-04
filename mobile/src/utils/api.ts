@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = "http://192.168.0.130:3000";
+export const API_URL = "http://192.168.1.111:3000";
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -23,6 +23,16 @@ export async function setToken(token: string): Promise<void> {
 export async function removeToken(): Promise<void> {
   await AsyncStorage.removeItem('token');
 }
+
+
+
+
+
+
+
+
+
+
 
 // ---------- PROFILE ----------
 
@@ -60,7 +70,7 @@ export async function registerProfile(data: {
   }
 }
 
-// Logowanie użytkownika
+// Logowanie użytkownika (otrzymujesz token)
 export async function login(identifier: string, haslo: string): Promise<ApiResponse> {
   try {
     const res = await fetch(`${API_URL}/profiles/login`, {
@@ -99,7 +109,7 @@ export async function login(identifier: string, haslo: string): Promise<ApiRespo
   }
 }
 
-// Pobierz swój profil
+// Pobierz swój profil (po zalogowaniu, wymaga JWT)
 export async function getMyProfile(): Promise<ApiResponse> {
   try {
     const token = await getToken();
@@ -128,7 +138,7 @@ export async function getMyProfile(): Promise<ApiResponse> {
   }
 }
 
-// Pobierz wszystkie profile
+// Pobierz wszystkie profile (lista użytkowników)
 export async function getProfiles(): Promise<ApiResponse> {
   try {
     const res = await fetch(`${API_URL}/profiles`, {
@@ -149,230 +159,149 @@ export async function getProfiles(): Promise<ApiResponse> {
   }
 }
 
+// Zmianna Roli użytkownika
+export async function changeUserRole(id: number, role: string) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/profiles/${id}/role`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+    },
+    body: JSON.stringify({ role }),
+  });
+  return res.json();
+}
+
+
+
+
+
+
+
+
+
+
+
 // ---------- NEWS ----------
 
 // Pobierz newsy
-export async function getNews(): Promise<ApiResponse> {
-  try {
-    const res = await fetch(`${API_URL}/news`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function getNews() {
+  const res = await fetch(`${API_URL}/news`);
+  return res.json();
 }
 
 // Dodaj news
-export async function addNews(title: string, description: string): Promise<ApiResponse> {
-  try {
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/news`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ title, description })
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function addNews(title: string, description: string) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/news`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    },
+    body: JSON.stringify({ title, description })
+  });
+  return res.json();
 }
+
+
+
+
+
+
+
+
+
+
+
 
 // ---------- NOTIFICATIONS ----------
 
 // Pobierz powiadomienia
-export async function getNotifications(): Promise<ApiResponse> {
-  try {
-    const res = await fetch(`${API_URL}/notifications`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function getNotifications() {
+  const res = await fetch(`${API_URL}/notifications`);
+  return res.json();
 }
 
 // Dodaj powiadomienie
-export async function addNotification(title: string, description: string): Promise<ApiResponse> {
-  try {
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/notifications`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ title, description })
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function addNotification(title: string, description: string, type: string = 'info') {
+  const res = await fetch(`${API_URL}/notifications`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description, type })
+  });
+  return res.json();
 }
 
-// ---------- ZLECENIA ----------
+// Oznacz powiadomienie jako przeczytane
+export async function markNotificationAsRead(id: number) {
+  const res = await fetch(`${API_URL}/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return res.json();
+}
 
-// Pobierz wszystkie zlecenia
-export async function getOrders(): Promise<ApiResponse> {
-  try {
-    const res = await fetch(`${API_URL}/orders`, {
-      headers: { 'Accept': 'application/json' }
-    });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
 
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+
+
+
+
+
+
+
+
+
+// ---------- zlecenia ----------
+ // Pobierz wszystkie zlecenia
+export async function getOrders() {
+  const res = await fetch(`${API_URL}/orders`);
+  return res.json();
 }
 
 // Dodaj zlecenie
-export async function addOrder(name: string, status: string, date: string): Promise<ApiResponse> {
-  try {
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ name, status, date })
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function addOrder(name: string, status: string, date: string) {
+  const token = await getToken(); 
+  const res = await fetch(`${API_URL}/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    },
+    body: JSON.stringify({ name, status, date })
+  });
+  return res.json();
 }
-
 // Pobierz jedno zlecenie po ID
-export async function getOrder(id: number): Promise<ApiResponse> {
-  try {
-    const res = await fetch(`${API_URL}/orders/${id}`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function getOrder(id: number) {
+  const res = await fetch(`${API_URL}/orders/${id}`);
+  return res.json();
 }
 
 // Edytuj zlecenie po ID
-export async function updateOrder(id: number, data: { name: string; status: string; date: string }): Promise<ApiResponse> {
-  try {
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/orders/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const responseData = await res.json();
-    return { success: true, data: responseData };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+export async function updateOrder(id: number, data: { name: string; status: string; date: string }) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/orders/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    },
+    body: JSON.stringify(data)
+  });
+  return res.json();
 }
 
 // Usuń zlecenie po ID
-export async function deleteOrder(id: number): Promise<ApiResponse> {
-  try {
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/orders/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+export async function deleteOrder(id: number) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/orders/${id}`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
     }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+  });
+  return res.json();
 }
