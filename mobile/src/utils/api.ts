@@ -1,19 +1,31 @@
-const API_URL = "http://localhost:3000";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_URL = "http://192.168.1.111:3000";
 
 // Pobierz token JWT z localStorage
-export function getToken(): string | null {
-  return localStorage.getItem('token');
+export async function getToken(): Promise<string | null> {
+  return await AsyncStorage.getItem('token');
 }
 
 // Zapisz token do localStorage
-export function setToken(token: string) {
-  localStorage.setItem('token', token);
+export async function setToken(token: string) {
+  await AsyncStorage.setItem('token', token);
 }
 
 // Usuń token (wyloguj)
-export function removeToken() {
-  localStorage.removeItem('token');
+export async function removeToken() {
+  await AsyncStorage.removeItem('token');
 }
+
+
+
+
+
+
+
+
+
+
 
 // ---------- PROFILE ----------
 
@@ -49,7 +61,7 @@ export async function login(identifier: string, haslo: string) {
 
 // Pobierz swój profil (po zalogowaniu, wymaga JWT)
 export async function getMyProfile() {
-  const token = getToken();
+  const token = await getToken();
   const res = await fetch(`${API_URL}/me`, {
     headers: { 'Authorization': 'Bearer ' + token }
   });
@@ -63,6 +75,17 @@ export async function getProfiles() {
   return res.json();
 }
 
+
+
+
+
+
+
+
+
+
+
+
 // ---------- NEWS ----------
 
 // Pobierz newsy
@@ -73,7 +96,7 @@ export async function getNews() {
 
 // Dodaj news
 export async function addNews(title: string, description: string) {
-  const token = getToken();
+  const token = await getToken();
   const res = await fetch(`${API_URL}/news`, {
     method: 'POST',
     headers: {
@@ -85,6 +108,17 @@ export async function addNews(title: string, description: string) {
   return res.json();
 }
 
+
+
+
+
+
+
+
+
+
+
+
 // ---------- NOTIFICATIONS ----------
 
 // Pobierz powiadomienia
@@ -95,7 +129,7 @@ export async function getNotifications() {
 
 // Dodaj powiadomienie
 export async function addNotification(title: string, description: string) {
-  const token = getToken();
+  const token = await getToken();
   const res = await fetch(`${API_URL}/notifications`, {
     method: 'POST',
     headers: {
@@ -107,6 +141,19 @@ export async function addNotification(title: string, description: string) {
   return res.json();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+// ---------- zlecenia ----------
  // Pobierz wszystkie zlecenia
 export async function getOrders() {
   const res = await fetch(`${API_URL}/orders`);
@@ -115,7 +162,7 @@ export async function getOrders() {
 
 // Dodaj zlecenie
 export async function addOrder(name: string, status: string, date: string) {
-  const token = getToken(); // jeśli chcesz zabezpieczać
+  const token = await getToken(); 
   const res = await fetch(`${API_URL}/orders`, {
     method: 'POST',
     headers: {
@@ -134,7 +181,7 @@ export async function getOrder(id: number) {
 
 // Edytuj zlecenie po ID
 export async function updateOrder(id: number, data: { name: string; status: string; date: string }) {
-  const token = getToken();
+  const token = await getToken();
   const res = await fetch(`${API_URL}/orders/${id}`, {
     method: 'PUT',
     headers: {
@@ -148,7 +195,7 @@ export async function updateOrder(id: number, data: { name: string; status: stri
 
 // Usuń zlecenie po ID
 export async function deleteOrder(id: number) {
-  const token = getToken();
+  const token = await getToken();
   const res = await fetch(`${API_URL}/orders/${id}`, {
     method: 'DELETE',
     headers: {
