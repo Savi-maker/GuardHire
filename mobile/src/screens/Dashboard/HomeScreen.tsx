@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   burger: {
     position: 'absolute',
-    top: 40,
+    top: 70,
     right: 20,
     zIndex: 10,
   },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   menuContainer: {
-    width: '80%',
+    width: '70%',
     height: '100%',
     paddingTop: 60,
     paddingHorizontal: 20,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#cccccc44',
   },
   menuText: {
-    fontSize: 16,
+    fontSize: 17,
   },
   loginButton: {
     paddingVertical: 20,
