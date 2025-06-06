@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = "http://192.168.1.111:3000";
+export const API_URL = "http://10.1.1.133:3000";
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -109,33 +109,34 @@ export async function login(identifier: string, haslo: string): Promise<ApiRespo
   }
 }
 
-// Pobierz swój profil (po zalogowaniu, wymaga JWT)
-export async function getMyProfile(): Promise<ApiResponse> {
-  try {
-    const token = await getToken();
-    if (!token) {
-      throw new Error('Brak tokenu autoryzacyjnego');
-    }
 
-    const res = await fetch(`${API_URL}/me`, {
+export type ProfileType = {
+  id: number;
+  imie: string;
+  nazwisko: string;
+  mail: string;
+  username: string;
+  numertelefonu: string;
+  stanowisko: string;
+  role: string;
+};
+// Pobierz swój profil (po zalogowaniu, wymaga JWT)
+export async function getMyProfile(): Promise<ProfileType> {
+ try {
+  const token = await getToken();
+    if (!token) throw new Error('Brak tokenu autoryzacyjnego');
+    const res = await fetch(`${API_URL}/profiles/me`, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
       }
+      
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  
     const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
-  }
+    return data;
+    } catch(error) {  throw error;}
 }
 
 // Pobierz wszystkie profile (lista użytkowników)
