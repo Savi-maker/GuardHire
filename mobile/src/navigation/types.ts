@@ -7,7 +7,6 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   List: undefined;
-  Detail: undefined;
   Search: undefined;
   Notifications: undefined;
   Form: undefined;
@@ -18,4 +17,15 @@ export type RootStackParamList = {
   OrderHistory: undefined;
   HelpSupport: undefined;
   Main: undefined;
+  Detail:{
+    id: number;
+    title:string; 
+    description: string
+  }
+  
+};
+export type Newstype = { 
+  id: number;
+  title:string;
+  description: string;
 };

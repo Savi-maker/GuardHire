@@ -11,9 +11,11 @@ import { useError } from '../Feedback/ErrorContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNews } from '../../utils/api';
+import DetailScreen from '../Details/DetailScreen';
 
-type NewsType = { id: string, title: string, description: string };
+type NewsType = { id: number, title: string, description: string };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 
 const HomeScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -25,13 +27,14 @@ const HomeScreen: React.FC = () => {
   const [news, setNews] = useState<{ id: number, title: string, description: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedNews, setSelectedNews] = useState<NewsType | null>(null);
 
   const actions = [
     { id: '1', title: 'Zlecenia', route: 'List' },
     { id: '2', title: 'Historia', route: 'OrderHistory' },
     { id: '3', title: 'Profil', route: 'UserProfile' },
     { id: '4', title: 'Powiadomienia', route: 'Notifications' },
-    { id: '8', title: 'Szczegóły', route: 'Detail' },
     { id: '10', title: 'Formularz', route: 'Form' },
     { id: '11', title: 'Płatność', route: 'Payment' },
     { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
@@ -41,15 +44,32 @@ const HomeScreen: React.FC = () => {
 
   
 
-  const renderNewsItem = ({ item }: { item: typeof news[0] }) => (
-    <View style={[styles.newsCard, { backgroundColor: theme === 'dark' ? '#424242' : '#f2f2f2' }]}>
+   const handleDelete = (id: number) => {
+    setModalVisible(false);
+    setNews(news.filter(n => n.id !== id));
+  };
+
+  const handleEdit = (id: number) => {
+    setModalVisible(false);
+    setError('Opcja edycji jeszcze niezaimplementowana!');
+  };
+
+  const renderNewsItem = ({ item }: { item: NewsType }) => (
+    <TouchableOpacity
+      style={[styles.newsCard, { backgroundColor: theme === 'dark' ? '#424242' : '#f2f2f2' }]}
+      onPress={() => {
+        setSelectedNews(item);
+        setModalVisible(true);
+      }}
+      activeOpacity={0.8}
+    >
       <Text style={[styles.newsTitle, { color: textColor }]}>{item.title}</Text>
       <Text style={[styles.newsDesc, { color: textColor }]}>
         {item.description.length > 100
           ? item.description.substring(0, 100) + '...'
           : item.description}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   const slideAnim = useRef(new Animated.Value(300)).current;
@@ -99,7 +119,15 @@ const HomeScreen: React.FC = () => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderNewsItem}
         contentContainerStyle={{ paddingBottom: 20 }}
-         ListEmptyComponent={<Text style={{ color: textColor, textAlign: 'center', margin: 15 }}>Brak newsów.</Text>}
+        ListEmptyComponent={<Text style={{ color: textColor, textAlign: 'center', margin: 15 }}>Brak newsów.</Text>}
+      />
+
+      <DetailScreen
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        news={selectedNews || { id: 0, title: '', description: '' }}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
       />
 
       <Modal transparent visible={menuVisible} animationType="none">

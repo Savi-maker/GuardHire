@@ -43,7 +43,6 @@ export default function App() {
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="List" component={ListScreen} />
-          <Stack.Screen name="Detail" component={DetailScreen} />
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Form" component={FormScreen} />
