@@ -3,6 +3,7 @@ import newsRoutes from './routes/newsRoutes';
 import orderRoutes from './routes/orderRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import profileRoutes from './routes/profileRoutes';
+import commentRoutes from './routes/commentRoutes';
 import { db } from './db';
 
 const app = express();

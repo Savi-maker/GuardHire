@@ -72,9 +72,9 @@ const ItemDetailsScreen = () => {
     setRating('');
   };
 
-  const background = isDark ? '#303030' : '#ffffff';
-  const text = isDark ? '#ffffff' : '#000000';
-  const border = isDark ? '#555555' : '#cccccc';
+  const background = isDark ? '#121212' : '#fff';
+  const text = isDark ? '#fff' : '#000';
+  const border = isDark ? '#444' : '#ccc';
 
   if (!order) return <Text style={[styles.title, { color: text }]}>Ładowanie danych testowych...</Text>;
 
@@ -125,7 +125,7 @@ const ItemDetailsScreen = () => {
         value={newComment}
         onChangeText={setNewComment}
         style={[styles.input, { borderColor: border, color: text }]}
-        placeholderTextColor={isDark ? '#aaaaaa' : '#888888'}
+        placeholderTextColor={isDark ? '#999' : '#aaa'}
       />
       <TextInput
         placeholder="Ocena (1–5)"
@@ -133,7 +133,7 @@ const ItemDetailsScreen = () => {
         onChangeText={setRating}
         keyboardType="numeric"
         style={[styles.input, { borderColor: border, color: text }]}
-        placeholderTextColor={isDark ? '#aaaaaa' : '#888888'}
+        placeholderTextColor={isDark ? '#999' : '#aaa'}
       />
       <Button title="Wyślij" onPress={handleAddComment} color={isDark ? '#2196F3' : undefined} />
     </ScrollView>

@@ -16,6 +16,7 @@ import PaymentScreen from './src/screens/Payment/PaymentScreen';
 import TransactionDetailsScreen from './src/screens/Payment/TransactionDetails';
 import { ErrorProvider } from './src/screens/Feedback/ErrorContext';
 import ErrorOverlay from './src/screens/Feedback/ErrorOverlay';
+import ItemDetailsScreen from './src/screens/Details/ItemDetailsScreen';
 import SuccessScreen from './src/screens/Feedback/SuccessScreen';
 import OrderHistoryScreen from './src/screens/History/OrderHistoryScreen';
 import HelpSupportScreen from './src/screens/Support/HelpSupportScreen';
@@ -51,6 +52,8 @@ export default function App() {
           <Stack.Screen name="Success" component={SuccessScreen} />
           <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+          <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />
+          
         </Stack.Navigator>
       </NavigationContainer>
       <ErrorOverlay /> 

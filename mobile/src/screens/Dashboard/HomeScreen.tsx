@@ -40,6 +40,7 @@ const HomeScreen: React.FC = () => {
     { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
     { id: '13', title: 'Sukces', route: 'Success' },
     { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
+    { id: '16', title: 'Szczegóły(testy)', route: 'ItemDetails' },
   ];
 
   

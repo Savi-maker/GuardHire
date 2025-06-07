@@ -7,25 +7,15 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   List: undefined;
+  Detail: undefined;
   Search: undefined;
   Notifications: undefined;
   Form: undefined;
   Payment: undefined;
-  TransactionDetails: { transactionId: string };
-  Error: { message?: string };
   Success: undefined;
   OrderHistory: undefined;
   HelpSupport: undefined;
+  TransactionDetails: undefined;
   Main: undefined;
-  Detail:{
-    id: number;
-    title:string; 
-    description: string
-  }
-  
-};
-export type Newstype = { 
-  id: number;
-  title:string;
-  description: string;
+    ItemDetails: { itemId: number };
 };
