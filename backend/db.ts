@@ -47,11 +47,15 @@ db.serialize(() => {
   // ---------- ORDERS ----------
 
   db.run(`
-  CREATE TABLE IF NOT EXISTS orders (
+    CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     status TEXT,
-    date TEXT
+    date TEXT,
+    opis TEXT,
+    lat REAL,
+    lng REAL
+  
   )
 `);
   // ---------- DEFAULT ORDERS ----------
@@ -180,8 +184,17 @@ db.get('SELECT COUNT(*) as count FROM news', [], (err, row) => {
   }
 });
 
-
-
+// ---------- COMMENTS ----------
+db.run(`
+  CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    orderId INTEGER NOT NULL,
+    author TEXT,
+    content TEXT,
+    rating INTEGER,
+    createdAt TEXT DEFAULT (datetime('now'))
+  )
+`);
 
 
 
