@@ -58,7 +58,6 @@ export const login = (req: Request, res: Response) => {
 };
 
 export const getMyProfile = (req: Request, res: Response) => {
-  // @ts-ignore
   const userId = (req as any).user?.userId;
   db.get(
     'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko, role FROM profiles WHERE id = ?',
@@ -90,4 +89,30 @@ export const changeUserRole = (req: Request, res: Response) => {
     }
     res.json({ success: true, id, role });
   });
+};
+
+export const updateMyProfile = (req: Request, res: Response) => {
+  const userId = (req as any).user?.userId;
+  const { imie, nazwisko, mail, numertelefonu } = req.body;
+
+  if (!imie || !nazwisko || !mail || !numertelefonu) {
+    res.status(400).json({ error: 'Wszystkie pola są wymagane' });
+    return;
+  }
+
+  db.run(
+    'UPDATE profiles SET imie = ?, nazwisko = ?, mail = ?, numertelefonu = ? WHERE id = ?',
+    [imie, nazwisko, mail, numertelefonu, userId],
+    function (err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (this.changes === 0) {
+        res.status(404).json({ error: 'Nie znaleziono użytkownika' });
+        return;
+      }
+      res.json({ success: true });
+    }
+  );
 };
