@@ -24,7 +24,7 @@ import { ThemeProvider } from './src/screens/ThemeContext/ThemeContext';
 import { RootStackParamList } from './src/navigation/types';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
+import AdminPanelScreen from './src/screens/Admin/AdminPanelScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -53,7 +53,7 @@ export default function App() {
           <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />
-          
+          <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
         </Stack.Navigator>
       </NavigationContainer>
       <ErrorOverlay /> 

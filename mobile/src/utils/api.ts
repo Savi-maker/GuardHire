@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = "http://10.0.0.8:3000";
+export const API_URL = "http://192.168.1.111:3000";
 
 interface ApiResponse<T = any> {
   success: boolean;
