@@ -16,6 +16,7 @@ export type RootStackParamList = {
   OrderHistory: undefined;
   HelpSupport: undefined;
   TransactionDetails: undefined;
+  AdminPanel: undefined;
   Main: undefined;
     ItemDetails: { itemId: number };
 };
