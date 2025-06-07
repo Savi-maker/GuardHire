@@ -12,12 +12,81 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNews } from '../../utils/api';
 import DetailScreen from '../Details/DetailScreen';
+import { getToken, removeToken } from '../../utils/api';
 
 type NewsType = { id: number, title: string, description: string };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Dodaj interfejs CustomAlertProps po typach
+interface CustomAlertProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+  type: 'error' | 'success';
+}
+
+// Dodaj komponent CustomAlert przed komponentem HomeScreen
+const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.modalContainer}>
+          <View style={[
+            modalStyles.header,
+            type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
+          ]}>
+            <Text style={modalStyles.title}>{title}</Text>
+          </View>
+          <View style={modalStyles.body}>
+            <Text style={modalStyles.message}>{message}</Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              modalStyles.button,
+              type === 'error' ? modalStyles.errorButton : modalStyles.successButton
+            ]}
+            onPress={() => {
+              onClose();
+              if (type === 'success') {
+                navigation.navigate('Login');
+              }
+            }}
+          >
+            <Text style={modalStyles.buttonText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const HomeScreen: React.FC = () => {
+  // Dodaj nowe stany dla alertu
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'error' | 'success';
+  }>({
+    title: '',
+    message: '',
+    type: 'error'
+  });
+
+  // Dodaj funkcję showModal
+  const showModal = (title: string, message: string, type: 'error' | 'success') => {
+    setAlertConfig({ title, message, type });
+    setAlertVisible(true);
+  };
+
   const { theme } = useTheme();
   const { setError } = useError();
   const navigation = useNavigation<NavigationProp>();
@@ -29,6 +98,7 @@ const HomeScreen: React.FC = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsType | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const actions = [
     { id: '1', title: 'Zlecenia', route: 'List' },
@@ -104,6 +174,31 @@ const HomeScreen: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
+  // Dodaj useEffect do sprawdzania stanu logowania
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const token = await getToken();
+      setIsLoggedIn(!!token);
+    };
+    checkLoginStatus();
+  }, []);
+
+  // Dodaj funkcję do obsługi wylogowania
+  const handleLogout = async () => {
+    try {
+      await removeToken();
+      setIsLoggedIn(false);
+      setMenuVisible(false);
+      showModal('Sukces', 'Wylogowano pomyślnie!', 'success');
+    } catch (error) {
+      console.error('Błąd podczas wylogowywania:', error);
+      showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.', 'error');
+    }
+  };
+
+  // ... pozostała część komponentu ...
+
+  // W komponencie return, przed końcowym </View> dodaj:
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <View style={styles.headerContainer}>
@@ -161,16 +256,29 @@ const HomeScreen: React.FC = () => {
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Login');
+                  if (isLoggedIn) {
+                    handleLogout();
+                  } else {
+                    setMenuVisible(false);
+                    navigation.navigate('Login');
+                  }
                 }}
               >
-                <Text style={[styles.loginText, { color: textColor }]}>Logowanie</Text>
+                <Text style={[styles.loginText, { color: textColor }]}>
+                  {isLoggedIn ? 'Wyloguj' : 'Logowanie'}
+                </Text>
               </TouchableOpacity>
             </SafeAreaView>
           </View>
         </TouchableOpacity>
       </Modal>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };
@@ -193,7 +301,7 @@ const styles = StyleSheet.create({
   },
   burger: {
     position: 'absolute',
-    top: 70,
+    top: 40,
     right: 20,
     zIndex: 10,
   },
@@ -257,5 +365,68 @@ const styles = StyleSheet.create({
   },
   safeLoginContainer: {
     backgroundColor: 'transparent',
+  },
+});
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 15,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  header: {
+    padding: 15,
+    alignItems: 'center',
+  },
+  errorHeader: {
+    backgroundColor: '#ff6b6b',
+  },
+  successHeader: {
+    backgroundColor: '#51cf66',
+  },
+  title: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  body: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  message: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+  },
+  button: {
+    padding: 15,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  errorButton: {
+    backgroundColor: '#fff0f0',
+  },
+  successButton: {
+    backgroundColor: '#f0fff0',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

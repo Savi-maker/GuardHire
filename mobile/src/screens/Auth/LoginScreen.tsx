@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator,} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-import { useNavigation, NavigationProp} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
-import { login } from '../../utils/api';
+import { login, setToken } from '../../utils/api';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -23,7 +24,7 @@ type RootStackParamList = {
 };
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
       <Modal
@@ -64,7 +65,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onCl
 };
 
 const LoginScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [language, setLanguage] = useState<string>('pl');
@@ -149,16 +150,15 @@ const LoginScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      console.log('Rozpoczynam logowanie...');
-      const response = await login(email, password);  // funkcja login sama przekształci password na haslo
-      console.log('Odpowiedź z serwera:', response);
-
-      if (!response.success) {
-        showModal('Błąd', 'Nieprawidłowy email lub hasło', 'error'); // Lepszy komunikat błędu
+      const response = await login(email, password);
+      
+      if (!response.success || !response.token) {
+        showModal('Błąd', 'Nieprawidłowy email lub hasło', 'error');
         setIsLoading(false);
         return;
       }
 
+      await setToken(response.token); // token jest teraz na pewno zdefiniowany
       showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
     } catch (error) {
       console.error('Błąd podczas logowania:', error);
