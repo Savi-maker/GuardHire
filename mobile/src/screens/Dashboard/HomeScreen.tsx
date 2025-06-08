@@ -12,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNews } from '../../utils/api';
 import DetailScreen from '../Details/DetailScreen';
-import { getToken, removeToken } from '../../utils/api';
+import { getToken, removeToken, getMyProfile } from '../../utils/api';
+
 
 type NewsType = { id: number, title: string, description: string };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -66,6 +67,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onCl
   );
 };
 
+
 const HomeScreen: React.FC = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
@@ -96,6 +98,8 @@ const HomeScreen: React.FC = () => {
   const [selectedNews, setSelectedNews] = useState<NewsType | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   const actions = [
     { id: '1', title: 'Zlecenia', route: 'List' },
     { id: '2', title: 'Historia', route: 'OrderHistory' },
@@ -107,6 +111,10 @@ const HomeScreen: React.FC = () => {
     { id: '13', title: 'Sukces', route: 'Success' },
     { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
     { id: '16', title: 'Szczegóły(testy)', route: 'ItemDetails' },
+
+    ...(userRole === 'admin' ? [
+      { id: '20', title: 'Panel Admina', route: 'AdminPanel' },
+    ] : []),
   ];
 
    const handleDelete = (id: number) => {
@@ -118,6 +126,12 @@ const HomeScreen: React.FC = () => {
     setModalVisible(false);
     setError('Opcja edycji jeszcze niezaimplementowana!');
   };
+
+  useEffect(() => {
+  getMyProfile()
+    .then(profile => setUserRole(profile.role))
+    .catch(() => setUserRole(null));
+}, []);
 
   const renderNewsItem = ({ item }: { item: NewsType }) => (
     <TouchableOpacity
