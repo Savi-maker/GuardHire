@@ -17,7 +17,6 @@ import { getToken, removeToken } from '../../utils/api';
 type NewsType = { id: number, title: string, description: string };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Dodaj interfejs CustomAlertProps po typach
 interface CustomAlertProps {
   visible: boolean;
   title: string;
@@ -26,7 +25,6 @@ interface CustomAlertProps {
   type: 'error' | 'success';
 }
 
-// Dodaj komponent CustomAlert przed komponentem HomeScreen
 const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -69,7 +67,6 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onCl
 };
 
 const HomeScreen: React.FC = () => {
-  // Dodaj nowe stany dla alertu
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     title: string;
@@ -81,7 +78,6 @@ const HomeScreen: React.FC = () => {
     type: 'error'
   });
 
-  // Dodaj funkcję showModal
   const showModal = (title: string, message: string, type: 'error' | 'success') => {
     setAlertConfig({ title, message, type });
     setAlertVisible(true);
@@ -112,8 +108,6 @@ const HomeScreen: React.FC = () => {
     { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
     { id: '16', title: 'Szczegóły(testy)', route: 'ItemDetails' },
   ];
-
-  
 
    const handleDelete = (id: number) => {
     setModalVisible(false);
@@ -174,7 +168,6 @@ const HomeScreen: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  // Dodaj useEffect do sprawdzania stanu logowania
   useEffect(() => {
     const checkLoginStatus = async () => {
       const token = await getToken();
@@ -183,7 +176,6 @@ const HomeScreen: React.FC = () => {
     checkLoginStatus();
   }, []);
 
-  // Dodaj funkcję do obsługi wylogowania
   const handleLogout = async () => {
     try {
       await removeToken();
@@ -196,9 +188,6 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  // ... pozostała część komponentu ...
-
-  // W komponencie return, przed końcowym </View> dodaj:
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <View style={styles.headerContainer}>

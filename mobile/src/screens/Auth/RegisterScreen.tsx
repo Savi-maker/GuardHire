@@ -5,6 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
+import { API_URL } from '../../utils/api';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -178,13 +179,37 @@ const RegisterScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Implementacja logiki rejestracji
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsRegistrationSuccessful(true);
-      showModal('Sukces', 'Rejestracja zakończona powodzeniem!', 'success');
+      const response = await fetch(`${API_URL}/profiles/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          mail: email,
+          haslo: password,
+          imie: '',
+          nazwisko: '',
+          numertelefonu: '',
+          stanowisko: 'Pracownik',
+          role: 'user'
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsRegistrationSuccessful(true);
+        showModal('Sukces', 'Rejestracja zakończona powodzeniem!', 'success');
+        if (data.token) {
+          await AsyncStorage.setItem('token', data.token);
+        }
+      } else {
+        throw new Error(data.error || 'Wystąpił błąd podczas rejestracji');
+      }
     } catch (error) {
       setIsRegistrationSuccessful(false);
-      showModal('Błąd', 'Wystąpił błąd podczas rejestracji', 'error');
+      showModal('Błąd', error instanceof Error ? error.message : 'Wystąpił błąd podczas rejestracji', 'error');
     } finally {
       setIsLoading(false);
     }

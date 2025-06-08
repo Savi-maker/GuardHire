@@ -78,7 +78,7 @@ export async function registerProfile(data: {
   haslo: string;
 }): Promise<ApiResponse> {
   try {
-    const res = await fetch(`${API_URL}/profiles`, {
+    const res = await fetch(`${API_URL}/profiles/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
