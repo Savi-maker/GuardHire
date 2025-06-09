@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
-//TABELE MODUŁU Zlecenia mockup
-const dataActive = [
-  { id: '1', name: 'Warszawa Stadion', status: 'Aktywne', date: '2024-05-01' },
-  { id: '2', name: 'Kielce Stadion', status: 'Oczekujące', date: '2024-05-03' },
-];
 
-const dataHistory = [
-  { id: '1', name: 'Budka z kebabem', status: 'Zakończone', date: '2024-04-20' },
-  { id: '2', name: 'Politechnika Świętorzyska', status: 'Anulowane', date: '2024-04-21' },
-];
+const formatDate = (isoString: string): string => {
+  const date = new Date(isoString);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${hours}:${minutes} ${day}.${month}.${year}`;
+};
 
 //TABELE MODUŁU Kontakty mockup
 const dataContact = [
@@ -35,18 +36,34 @@ type ContactTabType = 'contacts' | 'popular';
 
 
 const ListScreen: React.FC = () => {
-  //INICJALIZACJA STANÓW TABEL
-  const [currentTab, setCurrentTab] = useState<TabType>('active');
-const [ContactTab, setContactTab] = useState<ContactTabType>('contacts');
 
-  const [selectedModule, setSelectedModule] = useState<'Zlecenia' | 'Kontakty'>('Zlecenia');
+const [currentTab, setCurrentTab] = useState<TabType>('active');
+const [ContactTab, setContactTab] = useState<ContactTabType>('contacts');
+const [selectedModule, setSelectedModule] = useState<'Zlecenia' | 'Kontakty'>('Zlecenia');
 const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+
+const [dataActive, setDataActive] = useState<any[]>([]);
+const [dataHistory, setDataHistory] = useState<any[]>([]);
+
+useEffect(() => {
+  fetch('http://192.168.0.19:3000/orders')
+    .then(res => res.json())
+    .then(data => {
+      const active = data.filter((o: any) => o.status !== 'zakończone' && o.status !== 'anulowane');
+      const history = data.filter((o: any) => o.status === 'zakończone' || o.status === 'anulowane');
+      setDataActive(active);
+      setDataHistory(history);
+    })
+    .catch(err => console.error('Błąd ładowania zleceń:', err));
+}, []);
+
 
   const renderItem = ({ item }: { item: typeof dataActive[0] }) => (
     <View style={styles.row}>
       <Text style={styles.cell}>{item.name}</Text>
       <Text style={styles.cell}>{item.status}</Text>
-      <Text style={styles.cell}>{item.date}</Text>
+      <Text style={styles.cell}>{formatDate(item.date)}</Text>
     </View>
   );
 
@@ -123,7 +140,7 @@ const renderModuleView = () => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Góra - wybór modułu */}
       <View style={styles.topBar}>
         <TouchableOpacity 
@@ -194,12 +211,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
+ flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingHorizontal: 16,
+  paddingTop: 30,
+  paddingBottom: 10,
+  backgroundColor: '#fff',
+  zIndex: 10,
   },
   moduleButton: {
     flexDirection: 'row',

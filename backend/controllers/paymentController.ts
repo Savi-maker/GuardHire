@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { db } from '../db';
 import { createPayment } from '../services/payu';
-
+import { Router } from 'express';
 export const handlePayment: RequestHandler = async (req, res) => {
   const { email } = req.body;
 
@@ -39,3 +39,16 @@ export const payuNotifyHandler: RequestHandler = (req, res) => {
 
   res.send("OK");
 };
+const router = Router();
+
+export const listPayments: RequestHandler = (req, res) => {
+  db.all('SELECT * FROM payments ORDER BY createdAt DESC', [], (err, rows) => {
+    if (err) {
+      console.error('Błąd przy pobieraniu payments:', err.message);
+      return res.status(500).json({ error: 'Błąd serwera' });
+    }
+    res.json(rows);
+  });
+};
+
+export default router;
