@@ -6,7 +6,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
-
 const formatDate = (isoString: string): string => {
   const date = new Date(isoString);
   const hours = String(date.getHours()).padStart(2, '0');
@@ -17,59 +16,99 @@ const formatDate = (isoString: string): string => {
   return `${hours}:${minutes} ${day}.${month}.${year}`;
 };
 
-//TABELE MODUŁU Kontakty mockup
-const dataContact = [
-  {id: '1', name: 'Janusz Kowalski', rate: '1', phone: '123456789'},
-  {id: '2', name: 'Sebastian Blok', rate: '3', phone: '123456789'}
-];
-
-const dataLastContact = [
-  {id: '1', name: 'Andrzej Box', rate: '9', phone: '123456789'},
-  {id: '2', name: 'Leon King', rate: '10', phone: '123456789'}
-];
-
-
-
-
-type TabType = 'active' | 'history';
-type ContactTabType = 'contacts' | 'popular';
-
-
 const ListScreen: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [currentTab, setCurrentTab] = useState<'active' | 'history'>('active');
+  const [selectedModule, setSelectedModule] = useState<'Zlecenia' | 'Kontakty'>('Zlecenia');
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-const [currentTab, setCurrentTab] = useState<TabType>('active');
-const [ContactTab, setContactTab] = useState<ContactTabType>('contacts');
-const [selectedModule, setSelectedModule] = useState<'Zlecenia' | 'Kontakty'>('Zlecenia');
-const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [payments, setPayments] = useState<any[]>([]);
+  const [dataActive, setDataActive] = useState<any[]>([]);
+  const [dataHistory, setDataHistory] = useState<any[]>([]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const ordersRes = await fetch('http://192.168.0.19:3000/orders');
+        const paymentsRes = await fetch('http://192.168.0.19:3000/payment/list');
+        const ordersData = await ordersRes.json();
+        const paymentsData = await paymentsRes.json();
 
-const [dataActive, setDataActive] = useState<any[]>([]);
-const [dataHistory, setDataHistory] = useState<any[]>([]);
+        const active = ordersData.filter((o: any) => o.status !== 'zakończone' && o.status !== 'anulowane');
+        const history = ordersData.filter((o: any) => o.status === 'zakończone' || o.status === 'anulowane');
 
-useEffect(() => {
-  fetch('http://192.168.0.19:3000/orders')
-    .then(res => res.json())
-    .then(data => {
-      const active = data.filter((o: any) => o.status !== 'zakończone' && o.status !== 'anulowane');
-      const history = data.filter((o: any) => o.status === 'zakończone' || o.status === 'anulowane');
-      setDataActive(active);
-      setDataHistory(history);
-    })
-    .catch(err => console.error('Błąd ładowania zleceń:', err));
-}, []);
+        setDataActive(active);
+        setDataHistory(history);
+        setPayments(paymentsData);
+      } catch (err) {
+        console.error('Błąd ładowania danych:', err);
+      }
+    };
 
+    fetchData();
+  }, []);
 
-  const renderItem = ({ item }: { item: typeof dataActive[0] }) => (
-    <View style={styles.row}>
-      <Text style={styles.cell}>{item.name}</Text>
-      <Text style={styles.cell}>{item.status}</Text>
-      <Text style={styles.cell}>{formatDate(item.date)}</Text>
-    </View>
-  );
+  const handlePayment = async (orderId: string) => {
+    const numericId = Number(orderId);
+    try {
+      await fetch('http://192.168.0.19:3000/payment/manual-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, amount: 1500 })
+      });
+await fetch(`http://192.168.0.19:3000/orders/${numericId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ status: 'w trakcie' })
+    });
 
-  //RENDER TABELI DO MODUŁU Zlecenia
+    } catch (e) {
+      console.warn('Błąd płatności:', e);
+    } finally {
+      // Odśwież payments
+      const updatedPayments = await fetch('http://192.168.0.19:3000/payment/list').then(res => res.json());
+      setPayments(updatedPayments);
+
+      setTimeout(() => {
+        navigation.navigate('Payment');
+      }, 100);
+    }
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    const isPaid = payments.some(p => String(p.orderId) === String(item.id));
+
+    return (
+      <View style={styles.row}>
+        <Text style={styles.cell}>{item.name}</Text>
+        <Text style={styles.cell}>{item.status}</Text>
+        <Text style={styles.cell}>{formatDate(item.date)}</Text>
+        <TouchableOpacity
+          style={[
+            styles.payButton,
+            { backgroundColor: isPaid ? '#2196f3' : '#4caf50' }
+          ]}
+          onPress={() => isPaid
+            ? navigation.navigate('Payment')
+            : handlePayment(item.id)
+          }
+        >
+          <Text style={styles.payButtonText}>
+            {isPaid ? 'Przejdź do płatności' : '💸 Opłać'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const getPaginatedData = (data: any[]) => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return data.slice(start, start + itemsPerPage);
+  };
+
   const renderTable = () => {
-    const data = currentTab === 'active' ? dataActive : dataHistory;
+    const data = getPaginatedData(currentTab === 'active' ? dataActive : dataHistory);
     const title = currentTab === 'active' ? '🔹 Aktywne zlecenia' : '🔸 Historia zleceń';
 
     return (
@@ -80,125 +119,59 @@ useEffect(() => {
             <Text style={styles.headerCell}>Nazwa</Text>
             <Text style={styles.headerCell}>Status</Text>
             <Text style={styles.headerCell}>Data</Text>
+            <Text style={styles.headerCell}>Akcja</Text>
           </View>
           <FlatList
             data={data}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => `${item.id}-${payments.length}`} 
           />
+        </View>
+        <View style={styles.bottomNav}>
+          <TouchableOpacity onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+            <Text style={styles.navText}>◀</Text>
+          </TouchableOpacity>
+          <Text style={styles.navText}>Strona {currentPage}</Text>
+          <TouchableOpacity
+            onPress={() => setCurrentPage(prev => prev + 1)}
+            disabled={getPaginatedData(currentTab === 'active' ? dataActive : dataHistory).length < itemsPerPage}
+          >
+            <Text style={styles.navText}>▶</Text>
+          </TouchableOpacity>
         </View>
       </>
     );
   };
 
-//RENDER TABELI DO MODUŁU Test
-const renderTestTable = () => {
-  const data = ContactTab === 'contacts' ? dataContact: dataLastContact;
-  const title = ContactTab === 'contacts' ? '📄 Kontakty' : '📑 Najpopularniejsze kontakty';
-
-  return (
-    <>
-      <Text style={styles.sectionTitle}>{title}</Text>
-       <View style={styles.table}></View>
-       <View style={styles.header}>
-      <Text style={styles.headerCell}>Nazwa</Text>
-            <Text style={styles.headerCell}>Ocena</Text>
-            <Text style={styles.headerCell}>Numer</Text>
-            </View>
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.cell}>{item.name}</Text>
-            <Text style={styles.cell}>{item.rate}</Text>
-            <Text style={styles.cell}>{item.phone}</Text>
-            
-          </View>
-        )}
-      />
-    </>
-  );
-};
-
-
-
-const renderModuleView = () => {
-  if (selectedModule === 'Zlecenia') {
-    return renderTable(); 
-  }
-
-  if (selectedModule === 'Kontakty') {
-    return renderTestTable();
-   
-  }
-
-  return null;
-};
-
-
-
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Góra - wybór modułu */}
       <View style={styles.topBar}>
-        <TouchableOpacity 
-        style={styles.moduleButton}
-       onPress={() => setSelectedModule(prev => (prev === 'Zlecenia' ? 'Kontakty' : 'Zlecenia'))} >
+        <TouchableOpacity
+          style={styles.moduleButton}
+          onPress={() => setSelectedModule(prev => (prev === 'Zlecenia' ? 'Kontakty' : 'Zlecenia'))}
+        >
           <Ionicons name="list-outline" size={20} color="#007AFF" />
           <Text style={styles.moduleButtonText}>{selectedModule}</Text>
         </TouchableOpacity>
-
- {/* Wyjście do ekranu głównego */}
         <TouchableOpacity onPress={() => navigation.navigate('Main')}>
           <Ionicons name="close" size={28} color="#FF3B30" />
         </TouchableOpacity>
       </View>
-
-    
-      {/* Przyciski nawigujące - do sterowania widocznością tabel */}
-
-<View style={styles.contentContainer}>
-  {renderModuleView()}
-</View>
-{selectedModule === 'Zlecenia' && (
-  <View style={styles.bottomNav}>
-    <TouchableOpacity
-      style={[styles.navButton, currentTab === 'active' && styles.navButtonActive]}
-      onPress={() => setCurrentTab('active')}
-    >
-      <Text style={styles.navText}>Aktywne</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity
-      style={[styles.navButton, currentTab === 'history' && styles.navButtonActive]}
-      onPress={() => setCurrentTab('history')}
-    >
-      <Text style={styles.navText}>Historia</Text>
-    </TouchableOpacity>
-  </View>
-)}
-
-
-{selectedModule === 'Kontakty' && (
-  <View style={styles.bottomNav}>
-    <TouchableOpacity
-      style={[styles.navButton, ContactTab === 'contacts' && styles.navButtonActive]}
-      onPress={() => setContactTab('contacts')}
-    >
-      <Text style={styles.navText}>Kontakty</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity
-      style={[styles.navButton, ContactTab === 'popular' && styles.navButtonActive]}
-      onPress={() => setContactTab('popular')}
-    >
-      <Text style={styles.navText}>Najpopularniejsze Kontakty</Text>
-    </TouchableOpacity>
-  </View>
-)}
-
+      <View style={styles.contentContainer}>{renderTable()}</View>
+      <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={[styles.navButton, currentTab === 'active' && styles.navButtonActive]}
+          onPress={() => setCurrentTab('active')}
+        >
+          <Text style={styles.navText}>Aktywne</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.navButton, currentTab === 'history' && styles.navButtonActive]}
+          onPress={() => setCurrentTab('history')}
+        >
+          <Text style={styles.navText}>Historia</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -206,19 +179,16 @@ const renderModuleView = () => {
 export default ListScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   topBar: {
- flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  paddingHorizontal: 16,
-  paddingTop: 30,
-  paddingBottom: 10,
-  backgroundColor: '#fff',
-  zIndex: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 30,
+    paddingBottom: 10,
+    backgroundColor: '#fff',
+    zIndex: 10,
   },
   moduleButton: {
     flexDirection: 'row',
@@ -240,9 +210,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  table: {
-    marginBottom: 24,
-  },
+  table: { marginBottom: 24 },
   header: {
     flexDirection: 'row',
     borderBottomWidth: 1,
@@ -259,9 +227,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 0.5,
     borderBottomColor: '#eee',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   cell: {
     flex: 1,
+    paddingHorizontal: 4,
+  },
+  payButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  payButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   bottomNav: {
     flexDirection: 'row',
@@ -280,6 +261,4 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 16,
   },
-
-
 });

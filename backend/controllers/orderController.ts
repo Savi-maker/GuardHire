@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { Request, Response } from 'express';
+import { Request, Response} from 'express';
 
 export const getOrders = (req: Request, res: Response) => {
   db.all('SELECT * FROM orders', [], (err, rows) => {
@@ -46,6 +46,20 @@ export const updateOrder = (req: Request, res: Response) => {
 export const deleteOrder = (req: Request, res: Response) => {
   const { id } = req.params;
   db.run('DELETE FROM orders WHERE id = ?', [id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Nie znaleziono zlecenia' });
+    res.json({ success: true });
+  });
+};
+export const updateOrderStatus = (req: Request, res: Response): void => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status) {
+  //  return res.status(400).json({ error: 'Brak statusu' });
+  }
+
+  db.run('UPDATE orders SET status = ? WHERE id = ?', [status, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     if (this.changes === 0) return res.status(404).json({ error: 'Nie znaleziono zlecenia' });
     res.json({ success: true });

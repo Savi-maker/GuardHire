@@ -8,6 +8,7 @@ import UserProfileScreen from './src/screens/Profile/UserProfileScreen';
 import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
 import SettingsScreen from './src/screens/Settings/SettingsScreen';
 import ListScreen from './src/screens/List/ListScreen';
+import AddOrderScreen from './src/screens/List/AddOrderScreen';
 import DetailScreen from './src/screens/Details/DetailScreen';
 import SearchScreen from './src/screens/Search/SearchScreen';
 import NotificationsScreen from './src/screens/Notifications/NotificationsScreen';
@@ -44,6 +45,7 @@ export default function App() {
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="List" component={ListScreen} />
+          <Stack.Screen name="AddOrder" component={AddOrderScreen} options={{ title: 'Nowe zlecenie' }} />
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Form" component={FormScreen} />

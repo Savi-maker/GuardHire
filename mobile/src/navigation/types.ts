@@ -7,6 +7,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   List: undefined;
+  AddOrder: undefined;
   Detail: undefined;
   Search: undefined;
   Notifications: undefined;

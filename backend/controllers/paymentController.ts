@@ -1,7 +1,33 @@
 import { RequestHandler } from 'express';
 import { db } from '../db';
 import { createPayment } from '../services/payu';
-import { Router } from 'express';
+import { Request,Response,Router } from 'express';
+
+//DO WERYFIKACJI
+export const manualPaymentCreate: RequestHandler = (req: Request, res: Response): void => {
+  const { orderId, amount } = req.body;
+
+  if (!orderId || !amount) {
+   // return res.status(400).json({ error: 'Brakuje danych' });
+  }
+
+  db.run(
+    'INSERT INTO payments (orderId, amount, status, createdAt) VALUES (?, ?, ?, ?)',
+    [orderId, amount, 'pending', new Date().toISOString()],
+    function (err) {
+      if (err) {
+        console.error('Błąd insertu payments:', err.message);
+        return res.status(500).json({ error: 'Błąd serwera' });
+      }
+      res.json({ success: true, paymentId: this.lastID });
+    }
+  );
+};
+
+
+
+
+
 export const handlePayment: RequestHandler = async (req, res) => {
   const { email } = req.body;
 
@@ -42,7 +68,7 @@ export const payuNotifyHandler: RequestHandler = (req, res) => {
 const router = Router();
 
 export const listPayments: RequestHandler = (req, res) => {
-  db.all('SELECT * FROM payments ORDER BY createdAt DESC', [], (err, rows) => {
+  db.all('SELECT payments.*, orders.name as orderName FROM payments left join orders on payments.orderId = orders.id ORDER BY payments.createdAt DESC', [], (err, rows) => {
     if (err) {
       console.error('Błąd przy pobieraniu payments:', err.message);
       return res.status(500).json({ error: 'Błąd serwera' });
@@ -52,3 +78,15 @@ export const listPayments: RequestHandler = (req, res) => {
 };
 
 export default router;
+
+
+
+export const deleteAllPayments: RequestHandler = (req, res) => {
+  db.run('DELETE FROM payments', (err) => {
+    if (err) {
+      console.error('Błąd przy czyszczeniu payments:', err.message);
+      return res.status(500).json({ error: 'Błąd serwera' });
+    }
+    res.json({ success: true });
+  });
+};

@@ -8,7 +8,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
 
 type PaymentItem = {
   id: string;
-  orderId: string;
+  orderName: string;
   amount: number;
   status: string;
   createdAt: string;
@@ -120,6 +120,7 @@ const PaymentScreen: React.FC = () => {
     <View style={[styles.row, styles.headerRow]}>
       <Text style={[styles.cell, styles.headerText]}>LP</Text>
       <Text style={[styles.cell, styles.headerText]}>Kwota</Text>
+      <Text style={[styles.cell, styles.headerText]}>Zlecenie</Text>
       <Text style={[styles.cell, styles.headerText]}>Akcja</Text>
     </View>
   );
@@ -133,7 +134,8 @@ const PaymentScreen: React.FC = () => {
         <View style={styles.row}>
           <Text style={styles.cell}>{(currentPage - 1) * itemsPerPage + index + 1}</Text>
           <Text style={styles.cell}>{item.amount.toFixed(2)} PLN</Text>
-          <TouchableOpacity style={styles.button} onPress={() => handleOplac(item.orderId, item.amount)}>
+          <Text style={styles.cell}>{item.orderName}</Text>
+          <TouchableOpacity style={styles.button} onPress={() => handleOplac(item.orderName, item.amount)}>
             <Text style={styles.buttonText}>Opłać</Text>
           </TouchableOpacity>
         </View>
@@ -208,11 +210,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   row: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
+   flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eee',
     alignItems: 'center',
+    flexWrap: 'wrap', 
   },
   headerRow: {
     borderBottomWidth: 2,
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
-    textAlign: 'center',
+    paddingHorizontal: 4
   },
   button: {
     backgroundColor: '#4caf50',

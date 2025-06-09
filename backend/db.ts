@@ -54,7 +54,8 @@ db.serialize(() => {
     date TEXT,
     opis TEXT,
     lat REAL,
-    lng REAL
+    lng REAL,
+    paymentStatus TEXT DEFAULT 'unpaid'
   
   )
 `);

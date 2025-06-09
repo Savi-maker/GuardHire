@@ -4,7 +4,8 @@ import {
   addOrder,
   getOrderById,
   updateOrder,
-  deleteOrder
+  deleteOrder,
+  updateOrderStatus
 } from '../controllers/orderController';
 
 const router = express.Router();
@@ -14,5 +15,6 @@ router.post('/', addOrder);
 router.get('/:id', getOrderById);
 router.put('/:id', updateOrder);
 router.delete('/:id', deleteOrder);
+router.patch('/:id/status', updateOrderStatus);
 
 export default router;
