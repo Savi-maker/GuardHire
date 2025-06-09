@@ -58,6 +58,25 @@ db.serialize(() => {
   
   )
 `);
+
+
+ // ---------- PAYMENTS----------
+db.run(`
+  CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    orderId TEXT,
+    amount INTEGER,
+    status TEXT DEFAULT 'pending',
+    payuOrderId TEXT,
+    extOrderId TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now'))
+  )
+`);
+
+
+
+
   // ---------- DEFAULT ORDERS ----------
 
   db.get('SELECT COUNT(*) as count FROM orders', [], (err, row) => {

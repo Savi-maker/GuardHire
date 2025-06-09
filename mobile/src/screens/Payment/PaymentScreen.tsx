@@ -1,12 +1,5 @@
 import React, { useLayoutEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -29,20 +22,55 @@ const PaymentScreen: React.FC = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      title: 'Płatności',
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Main')}
-          style={styles.headerButton}
-        >
+        <TouchableOpacity onPress={() => navigation.navigate('Main')} style={styles.headerButton}>
           <Text style={styles.headerButtonText}>🏠 HOME</Text>
         </TouchableOpacity>
       ),
-      title: 'Płatności',
     });
   }, [navigation]);
 
-  const handleOplac = (id: string) => {
-    Alert.alert('Płatność', `Wysłano płatność za ID: ${id}`);
+  const handleOplac = async (id: string, kwota: string) => {
+    const amount = parseFloat(kwota.replace(' PLN', ''));
+    console.log('Kliknięto opłać:', id, kwota);
+
+    try {
+      const response = await fetch('http://192.168.0.19:3000/payment/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: id,
+          amount,
+          buyer: { email: 'janek@guardhire.pl' },
+          email:'janek@guardhire.pl'
+        })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Błąd odpowiedzi:', response.status, text);
+        Alert.alert('Błąd', 'Nie udało się utworzyć płatności');
+        return;
+      }
+
+      const data: { redirectUri?: string } = await response.json();
+      console.log('Odpowiedź serwera:', data);
+
+      if (data.redirectUri) {
+        const supported = await Linking.canOpenURL(data.redirectUri);
+        if (supported) {
+          await Linking.openURL(data.redirectUri);
+        } else {
+          Alert.alert('Błąd', 'Nie można otworzyć adresu płatności');
+        }
+      } else {
+        Alert.alert('Błąd', 'Brak redirectUri w odpowiedzi serwera');
+      }
+    } catch (err) {
+      console.error('Błąd płatności:', err);
+      Alert.alert('Błąd połączenia', 'Spróbuj ponownie później');
+    }
   };
 
   const handlePrzejdzDoSzczegolow = (id: string) => {
@@ -60,16 +88,13 @@ const PaymentScreen: React.FC = () => {
   const renderZaleglosci = () => (
     <FlatList
       data={mockZaleglosci}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       ListHeaderComponent={renderHeader}
       renderItem={({ item, index }) => (
         <View style={styles.row}>
           <Text style={styles.cell}>{index + 1}</Text>
           <Text style={styles.cell}>{item.kwota}</Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => handleOplac(item.id)}
-          >
+          <TouchableOpacity style={styles.button} onPress={() => handleOplac(item.id, item.kwota)}>
             <Text style={styles.buttonText}>Opłać</Text>
           </TouchableOpacity>
         </View>
@@ -80,7 +105,7 @@ const PaymentScreen: React.FC = () => {
   const renderHistoria = () => (
     <FlatList
       data={mockHistoria}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       ListHeaderComponent={renderHeader}
       renderItem={({ item, index }) => (
         <View style={styles.row}>
@@ -103,16 +128,10 @@ const PaymentScreen: React.FC = () => {
         {view === 'zaleglosci' ? renderZaleglosci() : renderHistoria()}
       </View>
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => setView('zaleglosci')}
-        >
+        <TouchableOpacity style={styles.footerButton} onPress={() => setView('zaleglosci')}>
           <Text style={styles.footerButtonText}>Zaległości</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => setView('historia')}
-        >
+        <TouchableOpacity style={styles.footerButton} onPress={() => setView('historia')}>
           <Text style={styles.footerButtonText}>Historia</Text>
         </TouchableOpacity>
       </View>
