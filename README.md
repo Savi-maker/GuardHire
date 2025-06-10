@@ -30,8 +30,7 @@ Przejście do folderu:
 cd ./backend
 
 -npm install
-npm install react-native-pager-view
-npm install axios
+
 Rozruch programu należy wykonać z folderu mobile i backend aby działay front i backend:
 
 -npm start
