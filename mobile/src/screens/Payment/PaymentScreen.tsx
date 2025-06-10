@@ -56,9 +56,7 @@ const PaymentScreen: React.FC = () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        orderId: id,
-        amount,
-        buyer: { email: 'janek@guardhire.pl' },
+        paymentId: id,
         email: 'janek@guardhire.pl'
       })
     });
@@ -73,6 +71,7 @@ const PaymentScreen: React.FC = () => {
     const data: { redirectUri?: string } = await response.json();
 
     const numericId = parseInt(id);
+    /*
     if (numericId % 2 === 0) {
 
       setTimeout(() => {
@@ -89,7 +88,8 @@ const PaymentScreen: React.FC = () => {
           .catch(console.error);
       }, 2000); 
       Alert.alert('Sukces', 'Symulowana płatność została oznaczona jako zakończona.');
-    } else if (data.redirectUri) {
+    }
+      */  if (data.redirectUri) {
       const supported = await Linking.canOpenURL(data.redirectUri);
       if (supported) {
         await Linking.openURL(data.redirectUri);
@@ -135,7 +135,7 @@ const PaymentScreen: React.FC = () => {
           <Text style={styles.cell}>{(currentPage - 1) * itemsPerPage + index + 1}</Text>
           <Text style={styles.cell}>{item.amount.toFixed(2)} PLN</Text>
           <Text style={styles.cell}>{item.orderName}</Text>
-          <TouchableOpacity style={styles.button} onPress={() => handleOplac(item.orderName, item.amount)}>
+          <TouchableOpacity style={styles.button} onPress={() => handleOplac(item.id, item.amount)}>
             <Text style={styles.buttonText}>Opłać</Text>
           </TouchableOpacity>
         </View>

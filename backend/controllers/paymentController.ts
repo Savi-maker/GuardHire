@@ -28,27 +28,46 @@ export const manualPaymentCreate: RequestHandler = (req: Request, res: Response)
 
 
 
-export const handlePayment: RequestHandler = async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    res.status(400).json({ error: "Brakuje emaila" });
+export const handlePayment: RequestHandler = (req, res) => {
+  const { paymentId, email } = req.body;
+  if (!paymentId || !email) {
+    res.status(400).json({ error: 'Brakuje paymentId lub emaila' });
     return;
   }
 
-  try {
-    const { payuOrderId, redirectUri, extOrderId } = await createPayment(email);
+  db.get(
+    'SELECT amount FROM payments WHERE id = ?',
+    [paymentId],
+    async (err, row: { amount: number } | undefined) => {
+      if (err) {
+        console.error('Błąd bazy danych:', err.message);
+        return res.status(500).json({ error: 'Błąd serwera przy odczycie' });
+      }
+      if (!row) {
+        return res.status(404).json({ error: 'Nie znaleziono płatności' });
+      }
 
-    db.run(
-      "INSERT INTO payments (orderId, amount, status, payuOrderId, extOrderId) VALUES (?, ?, ?, ?, ?)",
-      [extOrderId, 15.0, "pending", payuOrderId, extOrderId]
-    );
+      const amount = row.amount;
+      try {
+        const { payuOrderId, redirectUri, extOrderId } = await createPayment(String(amount), email);
 
-    res.json({ redirectUri });
-  } catch (err: any) {
-    console.error("Błąd przy tworzeniu płatności:", err);
-    res.status(500).json({ error: "Błąd płatności" });
-  }
+        db.run(
+          'UPDATE payments SET payuOrderId = ?, extOrderId = ?, updatedAt = datetime("now") WHERE id = ?',
+          [payuOrderId, extOrderId, paymentId],
+          (err2) => {
+            if (err2) {
+              console.error('Błąd aktualizacji płatności:', err2.message);
+              return res.status(500).json({ error: 'Błąd zapisu danych PayU' });
+            }
+            return res.json({ redirectUri });
+          }
+        );
+      } catch (e: any) {
+        console.error('Błąd przy tworzeniu płatności:', e);
+        return res.status(500).json({ error: 'Błąd płatności' });
+      }
+    }
+  );
 };
 
 
@@ -90,3 +109,17 @@ export const deleteAllPayments: RequestHandler = (req, res) => {
     res.json({ success: true });
   });
 };
+export const updatePaymentStatus = (extOrderId: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE extOrderId = ?",
+      [extOrderId],
+      function (err) {
+        if (err) return reject(err);
+        resolve();
+      }
+    );
+  });
+};
+
+

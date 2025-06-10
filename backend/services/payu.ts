@@ -27,19 +27,20 @@ async function getAccessToken() {
   return accessToken;
 }
 
-export async function createPayment(email: string) {
+export async function createPayment(amount: string, email: string) {
   const token = await getAccessToken();
 
   const extOrderId = `order-${Date.now()}`;
-
+ const nettoZloty = parseFloat(amount);          
+  const grosze     = Math.round(nettoZloty * 100) 
   const payload = {
     notifyUrl: "http://192.168.0.19:3000/payment/notify",
-    continueUrl: "http://localhost:3000/thank-you",
+    continueUrl: `http://192.168.0.19:3000/payment/confirmed?extOrderId=${extOrderId}`,
     customerIp: "127.0.0.1",
     merchantPosId: POS_ID,
     description: "Opłata za usługę GuardHire",
     currencyCode: "PLN",
-    totalAmount: "1500", 
+    totalAmount: grosze, 
     extOrderId,
     buyer: {
       email,
@@ -50,7 +51,7 @@ export async function createPayment(email: string) {
     products: [
       {
         name: "Super Produkt GuardHire",
-        unitPrice: "1500",
+        unitPrice: grosze,
         quantity: "1",
       },
     ],
