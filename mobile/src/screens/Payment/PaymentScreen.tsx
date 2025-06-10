@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,189 +6,240 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  Linking,
+  Dimensions
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import PagerView from 'react-native-pager-view';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
-
+import {
+  getPaymentList,
+  payPayment
+} from '../../utils/api'
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
 
-const mockZaleglosci = [
-  { id: '1', kwota: '120.00 PLN' },
-  { id: '2', kwota: '89.50 PLN' },
-];
+type PaymentItem = {
+  id: string;
+  orderName: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+};
 
-const mockHistoria = [
-  { id: '1', kwota: '100.00 PLN' },
-  { id: '2', kwota: '60.25 PLN' },
-];
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const formatDate = (isoString: string): string => {
+  const date = new Date(isoString);
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const MM = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${hh}:${mm}  ${dd}.${MM}.${yyyy}`;
+};
 
 const PaymentScreen: React.FC = () => {
-  const [view, setView] = useState<'zaleglosci' | 'historia'>('zaleglosci');
   const navigation = useNavigation<NavigationProp>();
+  const pagerRef = useRef<PagerView>(null);
+
+  const [zaleglosci, setZaleglosci] = useState<PaymentItem[]>([]);
+  const [historia, setHistoria] = useState<PaymentItem[]>([]);
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Main')}
-          style={styles.headerButton}
-        >
-          <Text style={styles.headerButtonText}>🏠 HOME</Text>
-        </TouchableOpacity>
-      ),
-      title: 'Płatności',
-    });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const handleOplac = (id: string) => {
-    Alert.alert('Płatność', `Wysłano płatność za ID: ${id}`);
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getPaymentList();
+        setZaleglosci(data.filter(i => i.status === 'pending'));
+        setHistoria(data.filter(i => i.status !== 'pending'));
+      } catch (err) {
+        console.error('Błąd ładowania płatności:', err);
+        Alert.alert('Błąd', 'Nie udało się pobrać danych płatności');
+      }
+    })();
+  }, []);
+
+  const handleOplac = async (id: string, amount: number) => {
+    try {
+      const response = await payPayment(id, 'janek@guardhire.pl');
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Błąd odpowiedzi:', response.status, text);
+        Alert.alert('Błąd', 'Nie udało się utworzyć płatności');
+        return;
+      }
+      const { redirectUri }: { redirectUri?: string } = await response.json();
+      if (redirectUri) {
+        const can = await Linking.canOpenURL(redirectUri);
+        if (can) await Linking.openURL(redirectUri);
+        else Alert.alert('Błąd', 'Nie można otworzyć adresu płatności');
+      } else {
+        Alert.alert('Błąd', 'Brak redirectUri w odpowiedzi serwera');
+      }
+    } catch (err) {
+      console.error('Błąd płatności:', err);
+      Alert.alert('Błąd połączenia', 'Spróbuj ponownie później');
+    }
   };
 
-  const handlePrzejdzDoSzczegolow = (id: string) => {
-    navigation.navigate('TransactionDetails', { transactionId: id });
+  const renderCard = (
+    item: PaymentItem,
+    pageType: 'zaleglosci' | 'historia'
+  ) => {
+    const isPending = pageType === 'zaleglosci';
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {item.orderName}
+          </Text>
+          <Text style={styles.cardStatus}>
+            {isPending
+              ? 'Oczekuje'
+              : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          </Text>
+        </View>
+
+        <Text style={styles.cardAmount}>{item.amount.toFixed(2)} PLN</Text>
+        <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
+
+        {isPending ? (
+          <TouchableOpacity
+            style={styles.btnUnpaid}
+            onPress={() => handleOplac(item.id, item.amount)}
+          >
+            <Text style={styles.btnText}>💸 Opłać</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.btnCompletedNonClickable}>
+            <Text style={styles.btnText}>Opłacono</Text>
+          </View>
+        )}
+      </View>
+    );
   };
-
-  const renderHeader = () => (
-    <View style={[styles.row, styles.headerRow]}>
-      <Text style={[styles.cell, styles.headerText]}>LP</Text>
-      <Text style={[styles.cell, styles.headerText]}>Kwota</Text>
-      <Text style={[styles.cell, styles.headerText]}>Akcja</Text>
-    </View>
-  );
-
-  const renderZaleglosci = () => (
-    <FlatList
-      data={mockZaleglosci}
-      keyExtractor={(item) => item.id}
-      ListHeaderComponent={renderHeader}
-      renderItem={({ item, index }) => (
-        <View style={styles.row}>
-          <Text style={styles.cell}>{index + 1}</Text>
-          <Text style={styles.cell}>{item.kwota}</Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => handleOplac(item.id)}
-          >
-            <Text style={styles.buttonText}>Opłać</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    />
-  );
-
-  const renderHistoria = () => (
-    <FlatList
-      data={mockHistoria}
-      keyExtractor={(item) => item.id}
-      ListHeaderComponent={renderHeader}
-      renderItem={({ item, index }) => (
-        <View style={styles.row}>
-          <Text style={styles.cell}>{index + 1}</Text>
-          <Text style={styles.cell}>{item.kwota}</Text>
-          <TouchableOpacity
-            style={styles.buttonSecondary}
-            onPress={() => handlePrzejdzDoSzczegolow(item.id)}
-          >
-            <Text style={styles.buttonText}>Historia</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    />
-  );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.table}>
-        {view === 'zaleglosci' ? renderZaleglosci() : renderHistoria()}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.navigate('Main')}>
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        </TouchableOpacity>
+        <Text style={styles.topTitle}>Płatności</Text>
+        <View style={{ width: 24 }} />
       </View>
+
+      <PagerView style={styles.pager} initialPage={0} ref={pagerRef}>
+        <View key="0" style={styles.page}>
+          <Text style={styles.pageTitle}>🕓 Zaległości</Text>
+          <FlatList
+            data={zaleglosci}
+            keyExtractor={i => i.id}
+            renderItem={({ item }) => renderCard(item, 'zaleglosci')}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+        <View key="1" style={styles.page}>
+          <Text style={styles.pageTitle}>✅ Historia</Text>
+          <FlatList
+            data={historia}
+            keyExtractor={i => i.id}
+            renderItem={({ item }) => renderCard(item, 'historia')}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </PagerView>
+
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => setView('zaleglosci')}
-        >
-          <Text style={styles.footerButtonText}>Zaległości</Text>
+        <TouchableOpacity onPress={() => pagerRef.current?.setPage(0)}>
+          <Text style={styles.footerText}>Zaległości</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => setView('historia')}
-        >
-          <Text style={styles.footerButtonText}>Historia</Text>
+        <TouchableOpacity onPress={() => pagerRef.current?.setPage(1)}>
+          <Text style={styles.footerText}>Historia</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default PaymentScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  table: {
-    flex: 1,
-    paddingTop: 20,
-    paddingHorizontal: 16,
-  },
-  row: {
+  container: { flex: 1, backgroundColor: '#f2f2f7' },
+
+  topBar: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#fff',
+    elevation: 2,
+  },
+  topTitle: { fontSize: 18, fontWeight: '600', color: '#333' },
+
+  pager: { flex: 1 },
+  page: { flex: 1, paddingTop: 8 },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    color: '#222',
+  },
+  listContainer: { paddingHorizontal: 16, paddingBottom: 16 },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111' },
+  cardStatus: { fontSize: 14, fontWeight: '500', color: '#555' },
+  cardAmount: { marginTop: 8, fontSize: 15, fontWeight: '500', color: '#333' },
+  cardDate: { marginTop: 4, fontSize: 13, color: '#666' },
+
+  btnUnpaid: {
+    marginTop: 12,
+    backgroundColor: '#4caf50',
+    paddingVertical: 8,
+    borderRadius: 6,
     alignItems: 'center',
   },
-  headerRow: {
-    borderBottomWidth: 2,
-    backgroundColor: '#f0f0f0',
-  },
-  headerText: {
-    fontWeight: 'bold',
-  },
-  cell: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#4caf50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  btnCompletedNonClickable: {
+    marginTop: 12,
+    backgroundColor: '#FFD700',
+    paddingVertical: 12,
     borderRadius: 6,
+    alignItems: 'center',
   },
-  buttonSecondary: {
-    backgroundColor: '#2196f3',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  btnText: { color: '#fff', fontWeight: '600' },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
+    backgroundColor: '#fff',
+    paddingVertical: 12,
     borderTopWidth: 1,
-    borderColor: '#ccc',
+    borderTopColor: '#e2e2e2',
   },
-  footerButton: {
-    backgroundColor: '#333',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  footerButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  headerButton: {
-    marginRight: 16,
-    padding: 6,
-  },
-  headerButtonText: {
-    color: '#007bff',
-    fontWeight: 'bold',
-  },
+  footerText: { fontSize: 16, fontWeight: '500', color: '#007AFF' },
 });

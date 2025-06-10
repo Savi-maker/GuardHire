@@ -54,8 +54,23 @@ db.serialize(() => {
     date TEXT,
     opis TEXT,
     lat REAL,
-    lng REAL
+    lng REAL,
+    paymentStatus TEXT DEFAULT 'unpaid'
   
+  )
+`);
+
+ // ---------- PAYMENTS----------
+db.run(`
+  CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    orderId TEXT,
+    amount INTEGER,
+    status TEXT DEFAULT 'pending',
+    payuOrderId TEXT,
+    extOrderId TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now'))
   )
 `);
   // ---------- DEFAULT ORDERS ----------

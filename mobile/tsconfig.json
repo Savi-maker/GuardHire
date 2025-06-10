@@ -3,7 +3,9 @@
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
-        "jsx": "react-native"
+        "jsx": "react-native",
+        "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src"],
   "extends": "expo/tsconfig.base"
