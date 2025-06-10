@@ -49,7 +49,7 @@ export default function App() {
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Form" component={FormScreen} />
-          <Stack.Screen name="Payment" component={PaymentScreen} options={{headerShown: true}} />
+          <Stack.Screen name="Payment" component={PaymentScreen}/>
           <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} options={{headerShown: true}} />
           <Stack.Screen name="Success" component={SuccessScreen} />
           <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />

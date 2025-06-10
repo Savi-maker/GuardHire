@@ -111,12 +111,35 @@ export const deleteAllPayments: RequestHandler = (req, res) => {
 };
 export const updatePaymentStatus = (extOrderId: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    db.run(
-      "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE extOrderId = ?",
+    //znajdz orderid po extorderid
+    db.get(
+      'SELECT orderId FROM payments WHERE extOrderId = ?',
       [extOrderId],
-      function (err) {
+      (err, row: { orderId: number } | undefined) => {
         if (err) return reject(err);
-        resolve();
+        if (!row) return reject(new Error(`Nie znaleziono płatności dla extOrderId=${extOrderId}`));
+
+        const orderId = row.orderId;
+
+        // aktualizuj wpalte
+        db.run(
+          "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE extOrderId = ?",
+          [extOrderId],
+          (err2) => {
+            if (err2) return reject(err2);
+
+            //Aktualizuj status zlecenia
+            db.run(
+              "UPDATE orders SET status = ? WHERE id = ?",
+              ['Opłacono', orderId],
+              (err3) => {
+                if (err3) return reject(err3);
+                // jest ok
+                resolve();
+              }
+            );
+          }
+        );
       }
     );
   });
