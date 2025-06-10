@@ -7,6 +7,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   List: undefined;
+  AddOrder: undefined;
   Detail: undefined;
   Search: undefined;
   Notifications: undefined;
@@ -15,7 +16,7 @@ export type RootStackParamList = {
   Success: undefined;
   OrderHistory: undefined;
   HelpSupport: undefined;
-  TransactionDetails: undefined;
+  TransactionDetails: { transactionId: string };
   AdminPanel: undefined;
   Main: undefined;
     ItemDetails: { itemId: number };
