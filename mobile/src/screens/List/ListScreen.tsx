@@ -13,7 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
-
+import {
+  getOrders,
+  getPaymentList,
+  manualCreatePayment,
+  updateOrderStatus
+} from '../../utils/api';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const formatDate = (isoString: string): string => {
@@ -33,18 +38,16 @@ const ListScreen: React.FC = () => {
   const pagerRef = useRef<PagerView>(null);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  useEffect(() => {
+ useEffect(() => {
     fetchAll();
   }, []);
 
   const fetchAll = async () => {
     try {
-      const [ordersRes, paymentsRes] = await Promise.all([
-        fetch('http://192.168.0.19:3000/orders'),
-        fetch('http://192.168.0.19:3000/payment/list'),
+      const [orders, pays] = await Promise.all([
+        getOrders(),
+        getPaymentList(),
       ]);
-      const orders = await ordersRes.json();
-      const pays   = await paymentsRes.json();
       setPayments(pays);
       setDataActive(orders.filter((o: any) =>
         o.status !== 'zakończone' &&
@@ -61,16 +64,8 @@ const ListScreen: React.FC = () => {
 
   const handlePayment = async (orderId: string) => {
     try {
-      await fetch('http://192.168.0.19:3000/payment/manual-create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, amount: 1500 }),
-      });
-      await fetch(`http://192.168.0.19:3000/orders/${Number(orderId)}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'w trakcie' }),
-      });
+      await manualCreatePayment(orderId); // NA RAZIE WARTOŚĆ NA SZTYWNO DO PODMIANY
+      await updateOrderStatus(orderId, 'w trakcie');
     } catch (e) {
       console.warn('Błąd płatności:', e);
     } finally {

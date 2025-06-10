@@ -15,7 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
-
+import {
+  getPaymentList,
+  payPayment
+} from '../../utils/api'
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
 
 type PaymentItem = {
@@ -52,8 +55,7 @@ const PaymentScreen: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('http://192.168.0.19:3000/payment/list');
-        const data: PaymentItem[] = await res.json();
+        const data = await getPaymentList();
         setZaleglosci(data.filter(i => i.status === 'pending'));
         setHistoria(data.filter(i => i.status !== 'pending'));
       } catch (err) {
@@ -65,11 +67,7 @@ const PaymentScreen: React.FC = () => {
 
   const handleOplac = async (id: string, amount: number) => {
     try {
-      const response = await fetch('http://192.168.0.19:3000/payment/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId: id, email: 'janek@guardhire.pl' }),
-      });
+      const response = await payPayment(id, 'janek@guardhire.pl');
       if (!response.ok) {
         const text = await response.text();
         console.error('Błąd odpowiedzi:', response.status, text);

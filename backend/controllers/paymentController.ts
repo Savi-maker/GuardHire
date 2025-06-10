@@ -5,16 +5,16 @@ import { Request,Response,Router } from 'express';
 
 //DO WERYFIKACJI
 export const manualPaymentCreate: RequestHandler = (req: Request, res: Response): void => {
-  const { orderId, amount } = req.body;
+  const { orderId} = req.body;
 
-  if (!orderId || !amount) {
+  if (!orderId) {
     res.status(400).json({ error: 'Brakuje danych' });
     return;
   }
 
   db.run(
     'INSERT INTO payments (orderId, amount, status, createdAt) VALUES (?, ?, ?, ?)',
-    [orderId, amount, 'pending', new Date().toISOString()],
+    [orderId, 1500, 'pending', new Date().toISOString()],
     function (err) {
       if (err) {
         console.error('Błąd insertu payments:', err.message);
