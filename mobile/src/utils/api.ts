@@ -261,6 +261,19 @@ export async function deleteOrder(id: number) {
   });
   return res.json();
 }
+
+// Aktualizacja statusu zlecenia
+export async function updateOrderStatus(orderId: string, status: string): Promise<any> {
+  const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  return res.json();
+}
+
+// ---------- WPŁATY ----------
+
 // Lista wpłat
 export async function getPaymentList(): Promise<any[]> {
   const res = await fetch(`${API_URL}/payment/list`);
@@ -277,15 +290,7 @@ export async function manualCreatePayment(orderId: string): Promise<any> {
   return res.json();
 }
 
-// Aktualizacja statusu zlecenia
-export async function updateOrderStatus(orderId: string, status: string): Promise<any> {
-  const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  return res.json();
-}
+
 
 // strzał z wpłaty do payu
 export async function payPayment(paymentId: string, email: string): Promise<Response> {
