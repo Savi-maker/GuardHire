@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export const API_URL = "http://192.168.1.111:3000";
+export const API_URL = "http://192.168.0.130:3000";
 
 
 interface ApiResponse<T = any> {
@@ -102,6 +102,26 @@ export async function registerProfile(data: {
     return { success: false, error: 'Wystąpił nieznany błąd' };
   }
 }
+
+// Resetowanie hasła
+export async function checkEmailExists(email: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/profiles/check-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    return data.exists;
+  } catch (error) {
+    console.error('Błąd podczas sprawdzania emaila:', error);
+    throw error;
+  }
+}
+
 
 // Pobierz swój profil (po zalogowaniu, wymaga JWT)
 export async function getMyProfile(): Promise<ProfileType> {

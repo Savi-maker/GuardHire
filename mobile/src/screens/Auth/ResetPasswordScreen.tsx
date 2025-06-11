@@ -5,6 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
+import { checkEmailExists } from '../../utils/api';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -128,11 +129,17 @@ const ResetPasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Implementacja logiki resetowania hasła
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Symulacja opóźnienia
+      const emailExists = await checkEmailExists(email);
+      
+      if (!emailExists) {
+        showModal('Błąd', 'Podany adres email nie istnieje w naszej bazie', 'error');
+        return;
+      }
+
       showModal('Sukces', 'Link do resetowania hasła został wysłany na podany adres email', 'success');
+      
     } catch (error) {
-      showModal('Błąd', 'Wystąpił błąd podczas wysyłania linku resetującego hasło', 'error');
+      showModal('Błąd', 'Wystąpił błąd podczas weryfikacji adresu email', 'error');
     } finally {
       setIsLoading(false);
     }

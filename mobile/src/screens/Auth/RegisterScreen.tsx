@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator,} from 'react-native';
+import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -55,6 +55,9 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onCl
 
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [imie, setImie] = useState('');
+  const [nazwisko, setNazwisko] = useState('');
+  const [numerTelefonu, setNumerTelefonu] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -68,7 +71,10 @@ const RegisterScreen: React.FC = () => {
     email: false,
     password: false,
     confirmPassword: false,
-    username: false
+    username: false,
+    imie: false,
+    nazwisko: false,
+    numerTelefonu: false
   });
 
   const [modalConfig, setModalConfig] = useState<{
@@ -124,15 +130,32 @@ const RegisterScreen: React.FC = () => {
   };
 
   const handleRegister = async () => {
-    // Reset błędów
     setErrors({
       email: false,
       password: false,
       confirmPassword: false,
-      username: false
+      username: false,
+      imie: false,
+      nazwisko: false,
+      numerTelefonu: false
     });
 
     let hasErrors = false;
+
+    if (!imie) {
+      setErrors(prev => ({ ...prev, imie: true }));
+      hasErrors = true;
+    }
+
+    if (!nazwisko) {
+      setErrors(prev => ({ ...prev, nazwisko: true }));
+      hasErrors = true;
+    }
+
+    if (!numerTelefonu) {
+      setErrors(prev => ({ ...prev, numerTelefonu: true }));
+      hasErrors = true;
+    }
 
     if (!username) {
       setErrors(prev => ({ ...prev, username: true }));
@@ -190,7 +213,7 @@ const RegisterScreen: React.FC = () => {
           haslo: password,
           imie: '',
           nazwisko: '',
-          numertelefonu: '',
+          numertelefonu: numerTelefonu,
           stanowisko: 'Pracownik',
           role: 'user'
         })
@@ -216,113 +239,172 @@ const RegisterScreen: React.FC = () => {
   };
 
   return (
-      <ImageBackground source={BackgroundImage} style={styles.background} resizeMode="cover">
-        <SafeAreaView style={styles.container}>
-          <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => navigation.navigate('Main')}
-              accessibilityLabel="Zamknij ekran rejestracji"
-          >
-            <Ionicons name="close" size={30} color="#000" />
-          </TouchableOpacity>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ImageBackground source={BackgroundImage} style={styles.background}>
+            <SafeAreaView style={styles.container}>
+                <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => navigation.navigate('Main')}
+                    accessibilityLabel="Zamknij ekran rejestracji"
+                >
+                    <Ionicons name="close" size={30} color="#000" />
+                </TouchableOpacity>
 
-          <View style={styles.contentWrapper}>
-            <View style={styles.content}>
-              <Text style={styles.title}>Rejestracja</Text>
+                <View style={styles.contentWrapper}>
+                    <View style={styles.content}>
+                        <Text style={styles.title}>Rejestracja</Text>
 
-              <TextInput
-                  style={[
-                    styles.input,
-                    errors.username && styles.inputError
-                  ]}
-                  placeholder="Nazwa użytkownika"
-                  placeholderTextColor="#aaa"
-                  autoCapitalize="none"
-                  value={username}
-                  onChangeText={(text) => {
-                    setUsername(text);
-                    setErrors(prev => ({ ...prev, username: false }));
-                  }}
-                  accessibilityLabel="Pole nazwa użytkownika"
-                  accessibilityHint="Wprowadź swoją nazwę użytkownika"
-              />
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.imie && styles.inputError
+                    ]}
+                    placeholder="Imię"
+                    placeholderTextColor="#aaa"
+                    value={imie}
+                    onChangeText={(text) => {
+                      setImie(text);
+                      setErrors(prev => ({ ...prev, imie: false }));
+                    }}
+                    accessibilityLabel="Pole imię"
+                    accessibilityHint="Wprowadź swoje imię"
+                />
 
-              <TextInput
-                  style={[
-                    styles.input,
-                    errors.email && styles.inputError
-                  ]}
-                  placeholder="Email"
-                  placeholderTextColor="#aaa"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    setErrors(prev => ({ ...prev, email: false }));
-                  }}
-                  accessibilityLabel="Pole email"
-                  accessibilityHint="Wprowadź swój adres email"
-              />
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.nazwisko && styles.inputError
+                    ]}
+                    placeholder="Nazwisko"
+                    placeholderTextColor="#aaa"
+                    value={nazwisko}
+                    onChangeText={(text) => {
+                      setNazwisko(text);
+                      setErrors(prev => ({ ...prev, nazwisko: false }));
+                    }}
+                    accessibilityLabel="Pole nazwisko"
+                    accessibilityHint="Wprowadź swoje nazwisko"
+                />
 
-              <TextInput
-                  style={[
-                    styles.input,
-                    errors.password && styles.inputError
-                  ]}
-                  placeholder="Hasło"
-                  placeholderTextColor="#aaa"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setErrors(prev => ({ ...prev, password: false }));
-                  }}
-                  accessibilityLabel="Pole hasło"
-                  accessibilityHint="Wprowadź swoje hasło"
-              />
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.numerTelefonu && styles.inputError
+                    ]}
+                    placeholder="Numer telefonu"
+                    placeholderTextColor="#aaa"
+                    keyboardType="phone-pad"
+                    value={numerTelefonu}
+                    onChangeText={(text) => {
+                      setNumerTelefonu(text);
+                      setErrors(prev => ({ ...prev, numerTelefonu: false }));
+                    }}
+                    accessibilityLabel="Pole numer telefonu"
+                    accessibilityHint="Wprowadź swój numer telefonu"
+                />
 
-              <TextInput
-                  style={[
-                    styles.input,
-                    errors.confirmPassword && styles.inputError
-                  ]}
-                  placeholder="Potwierdź hasło"
-                  placeholderTextColor="#aaa"
-                  secureTextEntry
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    setErrors(prev => ({ ...prev, confirmPassword: false }));
-                  }}
-                  accessibilityLabel="Pole potwierdzenie hasła"
-                  accessibilityHint="Wprowadź ponownie swoje hasło"
-              />
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.username && styles.inputError
+                    ]}
+                    placeholder="Nazwa użytkownika"
+                    placeholderTextColor="#aaa"
+                    autoCapitalize="none"
+                    value={username}
+                    onChangeText={(text) => {
+                      setUsername(text);
+                      setErrors(prev => ({ ...prev, username: false }));
+                    }}
+                    accessibilityLabel="Pole nazwa użytkownika"
+                    accessibilityHint="Wprowadź swoją nazwę użytkownika"
+                />
 
-              <TouchableOpacity
-                  style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-                  onPress={handleRegister}
-                  disabled={isLoading}
-                  accessibilityLabel="Przycisk zarejestruj"
-              >
-                {isLoading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.loginButtonText}>Zarejestruj</Text>
-                )}
-              </TouchableOpacity>
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.email && styles.inputError
+                    ]}
+                    placeholder="Email"
+                    placeholderTextColor="#aaa"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      setErrors(prev => ({ ...prev, email: false }));
+                    }}
+                    accessibilityLabel="Pole email"
+                    accessibilityHint="Wprowadź swój adres email"
+                />
 
-              <TouchableOpacity
-                  onPress={() => navigation.navigate('Login')}
-                  accessibilityLabel="Powrót do ekranu logowania"
-              >
-                <Text style={styles.loginLink}>Masz już konto? Zaloguj się!</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.password && styles.inputError
+                    ]}
+                    placeholder="Hasło"
+                    placeholderTextColor="#aaa"
+                    secureTextEntry
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      setErrors(prev => ({ ...prev, password: false }));
+                    }}
+                    accessibilityLabel="Pole hasło"
+                    accessibilityHint="Wprowadź swoje hasło"
+                />
 
-          <View style={styles.languagePickerContainer}>
-            <Text style={styles.label}>Język</Text>
+                <TextInput
+                    style={[
+                      styles.input,
+                      errors.confirmPassword && styles.inputError
+                    ]}
+                    placeholder="Potwierdź hasło"
+                    placeholderTextColor="#aaa"
+                    secureTextEntry
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      setErrors(prev => ({ ...prev, confirmPassword: false }));
+                    }}
+                    accessibilityLabel="Pole potwierdzenie hasła"
+                    accessibilityHint="Wprowadź ponownie swoje hasło"
+                />
+
+                <TouchableOpacity
+                    style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                    onPress={handleRegister}
+                    disabled={isLoading}
+                    accessibilityLabel="Przycisk zarejestruj"
+                >
+                  {isLoading ? (
+                      <ActivityIndicator color="#fff" />
+                  ) : (
+                      <Text style={styles.loginButtonText}>Zarejestruj</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('Login')}
+                    accessibilityLabel="Powrót do ekranu logowania"
+                >
+                  <Text style={styles.loginLink}>Masz już konto? Zaloguj się!</Text>
+                </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.languagePickerContainer}>
+                    <Text style={styles.label}>Język</Text>
             <Picker
                 selectedValue={language}
                 style={styles.picker}
@@ -333,18 +415,20 @@ const RegisterScreen: React.FC = () => {
               <Picker.Item label="Polski" value="pl" />
               <Picker.Item label="English" value="en" />
             </Picker>
-          </View>
+                </View>
 
-          <CustomAlert
-              visible={modalVisible}
-              title={modalConfig.title}
-              message={modalConfig.message}
-              type={modalConfig.type}
-              onClose={handleModalClose}
-          />
-        </SafeAreaView>
-      </ImageBackground>
-  );
+                <CustomAlert
+                    visible={modalVisible}
+                    title={modalConfig.title}
+                    message={modalConfig.message}
+                    type={modalConfig.type}
+                    onClose={handleModalClose}
+                />
+            </SafeAreaView>
+        </ImageBackground>
+      </ScrollView>
+    </KeyboardAvoidingView>
+);
 };
 
 const modalStyles = StyleSheet.create({
@@ -420,17 +504,22 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     width: '100%',
-    height: '100%',
+    height: '80%',
+    resizeMode: 'cover'
   },
   container: {
     flex: 1,
     paddingHorizontal: 32,
     backgroundColor: 'transparent',
   },
+  scrollView: {
+    flex: 1,
+  },
   contentWrapper: {
     flex: 1,
     justifyContent: 'center',
-    paddingTop: '80%',
+    paddingTop: 300,
+    paddingBottom: 20,
   },
   content: {},
   title: {
