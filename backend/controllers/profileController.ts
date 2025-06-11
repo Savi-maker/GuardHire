@@ -116,3 +116,23 @@ export const updateMyProfile = (req: Request, res: Response) => {
     }
   );
 };
+
+export const checkEmailExists = (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    db.get(
+        'SELECT id FROM profiles WHERE mail = ?',
+        [email],
+        (err, row) => {
+            if (err) {
+                res.status(500).json({
+                    exists: false,
+                    error: 'Błąd podczas sprawdzania emaila'
+                });
+                return;
+            }
+
+            res.json({ exists: !!row });
+        }
+    );
+};
