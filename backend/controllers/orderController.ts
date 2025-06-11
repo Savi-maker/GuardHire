@@ -51,3 +51,18 @@ export const deleteOrder = (req: Request, res: Response) => {
     res.json({ success: true });
   });
 };
+export const updateOrderStatus = (req: Request, res: Response): void => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status) {
+   res.status(400).json({ error: 'Brak statusu' });
+   return;
+  }
+
+  db.run('UPDATE orders SET status = ? WHERE id = ?', [status, id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Nie znaleziono zlecenia' });
+    res.json({ success: true });
+  });
+};

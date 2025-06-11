@@ -1,163 +1,113 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Button, StyleSheet } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext/ThemeContext';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getMyProfile } from '../../utils/api';
 
-// Typy
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-type Order = {
-  id: number;
-  name: string;
-  status: string;
-  date: string;
-  opis?: string;
-  lat?: number;
-  lng?: number;
-};
-
-type Comment = {
-  id: number;
-  author: string;
-  content: string;
-  rating?: number;
-};
-
-const ItemDetailsScreen = () => {
+const UserProfileScreen: React.FC = () => {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const navigation = useNavigation<NavigationProp>();
+  const isFocused = useIsFocused();
+  const backgroundColor = theme === 'dark' ? '#303030' : '#ffffff';
+  const textColor = theme === 'dark' ? '#ffffff' : '#000000';
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [rating, setRating] = useState('');
-
-  const mockOrderId = 1;
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const mockOrder: Order = {
-      id: mockOrderId,
-      name: 'Testowe Zlecenie',
-      status: 'W trakcie',
-      date: '2024-06-07T10:00:00Z',
-      opis: 'To jest opis testowego zlecenia. Sprawdzenie lokalizacji i działania komentarzy.',
-      lat: 50.866,
-      lng: 20.628,
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const profile = await getMyProfile();
+        setUser(profile);
+      } catch (error) {
+        console.error('Błąd ładowania profilu:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const mockComments: Comment[] = [
-      { id: 1, author: 'Anna', content: 'Wszystko przebiegło pomyślnie.', rating: 5 },
-      { id: 2, author: 'Janusz', content: 'Były drobne problemy.', rating: 3 },
-    ];
+    if (isFocused) {
+      fetchProfile();
+    }
+  }, [isFocused]);
 
-    setTimeout(() => {
-      setOrder(mockOrder);
-      setComments(mockComments);
-    }, 500);
-  }, []);
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={textColor} />
+      </SafeAreaView>
+    );
+  }
 
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-
-    const newId = comments.length + 1;
-    const parsedRating = parseInt(rating);
-    const commentToAdd: Comment = {
-      id: newId,
-      author: 'Jan Kowalski',
-      content: newComment.trim(),
-      rating: isNaN(parsedRating) ? undefined : parsedRating,
-    };
-
-    setComments((prev) => [...prev, commentToAdd]);
-    setNewComment('');
-    setRating('');
+  const finalUser = user || {
+    imie: 'Błąd',
+    nazwisko: 'Ładowania',
+    stanowisko: 'Nieznane',
+    mail: 'brak@danych.pl',
+    numertelefonu: '---',
   };
 
-  const background = isDark ? '#303030' : '#ffffff';
-  const text = isDark ? '#ffffff' : '#000000';
-  const border = isDark ? '#555555' : '#cccccc';
-
-  if (!order) return <Text style={[styles.title, { color: text }]}>Ładowanie danych testowych...</Text>;
-
   return (
-    <ScrollView style={[styles.container, { backgroundColor: background }]}>
-      <Text style={[styles.title, { color: text }]}>{order.name}</Text>
-      <Text style={[styles.label, { color: text }]}>Status:</Text>
-      <Text style={{ color: text }}>{order.status}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerText, { color: textColor }]}>Twój profil</Text>
+      </View>
 
-      <Text style={[styles.label, { color: text }]}>Data:</Text>
-      <Text style={{ color: text }}>{new Date(order.date).toLocaleDateString()}</Text>
+      <View style={styles.avatarContainer}>
+        <Image source={require('../../../assets/images/avatar.png')} style={styles.avatar} />
+        <Text style={[styles.name, { color: textColor }]}>{finalUser.imie} {finalUser.nazwisko}</Text>
+        <Text style={[styles.role, { color: textColor }]}>{finalUser.stanowisko}</Text>
+      </View>
 
-      <Text style={[styles.label, { color: text }]}>Opis:</Text>
-      <Text style={{ color: text }}>{order.opis ?? 'Brak opisu'}</Text>
+      <View style={styles.infoBox}>
+        <Ionicons name="mail" size={20} color={textColor} />
+        <Text style={[styles.infoText, { color: textColor }]}>{finalUser.mail}</Text>
+      </View>
 
-      {order.lat && order.lng && (
-        <>
-          <Text style={[styles.label, { color: text }]}>Lokalizacja:</Text>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: order.lat,
-              longitude: order.lng,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            <Marker
-              coordinate={{ latitude: order.lat, longitude: order.lng }}
-              title={order.name}
-            />
-          </MapView>
-        </>
-      )}
+      <View style={styles.infoBox}>
+        <Ionicons name="call" size={20} color={textColor} />
+        <Text style={[styles.infoText, { color: textColor }]}>{finalUser.numertelefonu}</Text>
+      </View>
 
-      <Text style={[styles.label, { color: text }]}>Komentarze i oceny:</Text>
-      {comments.length === 0 && <Text style={{ color: text }}>Brak komentarzy.</Text>}
-      {comments.map((c) => (
-        <View key={c.id} style={[styles.commentBox, { borderColor: border }]}>
-          <Text style={[styles.commentAuthor, { color: text }]}>{c.author}</Text>
-          <Text style={{ color: text }}>{c.content}</Text>
-          {c.rating !== undefined && <Text style={{ color: text }}>Ocena: {c.rating}/5</Text>}
-        </View>
-      ))}
-
-      <TextInput
-        placeholder="Dodaj komentarz..."
-        value={newComment}
-        onChangeText={setNewComment}
-        style={[styles.input, { borderColor: border, color: text }]}
-        placeholderTextColor={isDark ? '#aaaaaa' : '#888888'}
-      />
-      <TextInput
-        placeholder="Ocena (1–5)"
-        value={rating}
-        onChangeText={setRating}
-        keyboardType="numeric"
-        style={[styles.input, { borderColor: border, color: text }]}
-        placeholderTextColor={isDark ? '#aaaaaa' : '#888888'}
-      />
-      <Button title="Wyślij" onPress={handleAddComment} color={isDark ? '#2196F3' : undefined} />
-    </ScrollView>
+      <TouchableOpacity
+        style={[styles.editButton, { borderColor: textColor }]}
+        onPress={() => navigation.navigate('EditProfile')}
+      >
+        <Ionicons name="create-outline" size={20} color={textColor} style={{ marginRight: 10 }} />
+        <Text style={[styles.editText, { color: textColor }]}>Edytuj profil</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 40, paddingBottom: 16 },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  label: { marginTop: 10, fontWeight: 'bold' },
-  map: { width: '100%', height: 200, marginVertical: 10 },
-  input: {
-    borderWidth: 1,
-    padding: 8,
-    marginVertical: 6,
-    borderRadius: 4,
-  },
-  commentBox: {
-    padding: 10,
-    borderWidth: 1,
-    marginVertical: 4,
-    borderRadius: 4,
-  },
-  commentAuthor: { fontWeight: 'bold' },
-});
+export default UserProfileScreen;
 
-export default ItemDetailsScreen;
+const styles = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: 20 },
+  header: { marginTop: 10, marginBottom: 20 },
+  headerText: { fontSize: 22, fontWeight: 'bold' },
+  avatarContainer: { alignItems: 'center', marginBottom: 30 },
+  avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
+  name: { fontSize: 20, fontWeight: '600' },
+  role: { fontSize: 14, color: '#888' },
+  infoBox: { flexDirection: 'row', alignItems: 'center', marginVertical: 10 },
+  infoText: { marginLeft: 10, fontSize: 16 },
+  editButton: {
+    marginTop: 30,
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editText: { fontSize: 16, fontWeight: '600' },
+});

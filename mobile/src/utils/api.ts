@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const API_URL = "http://192.168.0.130:3000";
 
 
+
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -280,4 +281,43 @@ export async function deleteOrder(id: number) {
     }
   });
   return res.json();
+}
+
+// Aktualizacja statusu zlecenia
+export async function updateOrderStatus(orderId: string, status: string): Promise<any> {
+  const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  return res.json();
+}
+
+// ---------- WPŁATY ----------
+
+// Lista wpłat
+export async function getPaymentList(): Promise<any[]> {
+  const res = await fetch(`${API_URL}/payment/list`);
+  return res.json();
+}
+
+// Tworzenie płatności
+export async function manualCreatePayment(orderId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/payment/manual-create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId}),
+  });
+  return res.json();
+}
+
+
+
+// strzał z wpłaty do payu
+export async function payPayment(paymentId: string, email: string): Promise<Response> {
+  return await fetch(`${API_URL}/payment/pay`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentId, email }),
+  });
 }

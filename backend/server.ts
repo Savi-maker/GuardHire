@@ -1,6 +1,7 @@
 import express from 'express';
 import newsRoutes from './routes/newsRoutes';
 import orderRoutes from './routes/orderRoutes';
+import paymentRoutes from './routes/paymentRoutes'
 import notificationRoutes from './routes/notificationRoutes';
 import profileRoutes from './routes/profileRoutes';
 import commentRoutes from './routes/commentRoutes';
@@ -14,6 +15,7 @@ app.use('/news', newsRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/profiles', profileRoutes);
+app.use('/payment', paymentRoutes)
 
 
 app.get('/', (_req, res) => {
