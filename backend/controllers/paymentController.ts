@@ -146,3 +146,90 @@ export const updatePaymentStatus = (extOrderId: string): Promise<void> => {
   });
 };
 
+
+
+
+export const updatePaymentStatusByID = (id: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    //znajdz orderid po extorderid
+    db.get(
+      'SELECT orderId FROM payments WHERE id = ?',
+      [id],
+      (err, row: { orderId: number } | undefined) => {
+        if (err) return reject(err);
+        if (!row) return reject(new Error(`Nie znaleziono płatności dla ID=${id}`));
+
+        const orderId = row.orderId;
+
+        // aktualizuj wpalte
+        db.run(
+          "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE ID = ?",
+          [id],
+          (err2) => {
+            if (err2) return reject(err2);
+
+            //Aktualizuj status zlecenia
+            db.run(
+              "UPDATE orders SET status = ? WHERE id = ?",
+              ['Opłacono', orderId],
+              (err3) => {
+                if (err3) return reject(err3);
+                // jest ok
+                resolve();
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+};
+
+
+
+export const confirmedHandler: RequestHandler = async (req, res) => {
+  const extOrderId = req.query.extOrderId as string;
+
+  try {
+    await updatePaymentStatus(extOrderId);
+    res.send(`
+      <html>
+        <head><title>Płatność potwierdzona</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding-top: 80px;">
+          <h1>Płatność potwierdzona</h1>
+          <p>Dziękujemy za opłatę.<br>Możesz wrócić do aplikacji.</p>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Błąd w confirmedHandler:', err);
+    res.status(500).send("Wystąpił błąd przy potwierdzeniu płatności.");
+  }
+};
+
+
+
+
+export const confirmPayment: RequestHandler = (req, res) => {
+  const paymentId = req.params.id;
+
+  db.get(
+    'SELECT id FROM payments WHERE id = ?',
+    [paymentId],
+    async (err, row: { id: string } | undefined) => {
+      if (err || !row) {
+        console.error('Nie znaleziono płatności lub błąd DB:', err?.message);
+        return res.status(404).json({ error: 'Płatność nie istnieje' });
+      }
+
+      try {
+        await updatePaymentStatusByID(row.id);
+        res.json({ success: true });
+      } catch (e) {
+        console.error('Błąd zatwierdzania płatności:', e);
+        res.status(500).json({ error: 'Błąd zatwierdzania płatności' });
+      }
+    }
+  );
+};
+

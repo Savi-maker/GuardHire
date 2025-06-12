@@ -300,3 +300,26 @@ export async function payPayment(paymentId: string, email: string): Promise<Resp
     body: JSON.stringify({ paymentId, email }),
   });
 }
+// Zatwierdzenie płatności (admin)
+export async function confirmPayment(paymentId: string): Promise<ApiResponse> {
+  const token = await getToken();
+  try {
+    const res = await fetch(`${API_URL}/payment/${paymentId}/confirm`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      return { success: false, error: errorText };
+    }
+
+    const data = await res.json();
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, error: 'Błąd połączenia' };
+  }
+}
