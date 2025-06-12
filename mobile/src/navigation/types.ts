@@ -19,5 +19,6 @@ export type RootStackParamList = {
   TransactionDetails: { transactionId: string };
   AdminPanel: undefined;
   Main: undefined;
-    ItemDetails: { itemId: number };
+  ItemDetails: { itemId: number };
+  CurrentLocation: undefined;
 };
