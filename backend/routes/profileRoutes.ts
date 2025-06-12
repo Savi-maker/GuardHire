@@ -6,23 +6,20 @@ import {
   getMyProfile,
   changeUserRole,
   updateMyProfile,
-  checkEmailExists
+  uploadAvatar,
+  upload
 } from '../controllers/profileController';
-import { register } from '../controllers/authController';
 import { authenticateJWT, requireRole } from '../middleware/auth';
 
 const router = express.Router();
 
+
 router.get('/', getProfiles);
 router.post('/', addProfile);
-router.post('/register', (req, res, next) => {
-  register(req, res).catch(next);
-});
 router.post('/login', login);
-router.patch('/:id/role', authenticateJWT, requireRole('admin'), changeUserRole);
 router.get('/me', authenticateJWT, getMyProfile);
 router.patch('/me', authenticateJWT, updateMyProfile);
-
-router.post('/check-email', checkEmailExists);
+router.patch('/:id/role', authenticateJWT, requireRole('admin'), changeUserRole);
+router.post('/me/avatar', authenticateJWT, upload, uploadAvatar);
 
 export default router;

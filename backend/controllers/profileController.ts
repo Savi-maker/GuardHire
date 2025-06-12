@@ -2,12 +2,32 @@ import { db } from '../db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const SECRET = 'super_tajne_haslo';
 
+// Konfiguracja multer do zapisu awatara
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `avatar_${Date.now()}${ext}`);
+  }
+});
+
+export const upload = multer({ storage }).single('avatar');
+
 export const getProfiles = (req: Request, res: Response) => {
   db.all(
-    'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko, role FROM profiles',
+    'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko, role, avatar FROM profiles',
     [],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -32,10 +52,20 @@ export const addProfile = async (req: Request, res: Response) => {
 
 export const login = (req: Request, res: Response) => {
   const { identifier, haslo } = req.body;
+
+  // ⬇️ Definicja tymczasowego typu tylko dla tej funkcji
+  type DbUser = {
+    id: number;
+    mail: string;
+    haslo: string;
+    username: string;
+    role: string;
+  };
+
   db.get(
     'SELECT * FROM profiles WHERE mail = ? OR username = ?',
     [identifier, identifier],
-    async (err, user: { id: number, mail: string, haslo: string, username: string, role: string } | undefined) => {
+    async (err, user: DbUser | undefined) => {
       if (err) return res.status(500).json({ error: err.message });
       if (!user) return res.status(401).json({ error: 'Nieprawidłowy email/username lub hasło' });
 
@@ -60,7 +90,7 @@ export const login = (req: Request, res: Response) => {
 export const getMyProfile = (req: Request, res: Response) => {
   const userId = (req as any).user?.userId;
   db.get(
-    'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko, role FROM profiles WHERE id = ?',
+    'SELECT id, imie, nazwisko, mail, username, numertelefonu, stanowisko, role, avatar FROM profiles WHERE id = ?',
     [userId],
     (err, user) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -118,21 +148,57 @@ export const updateMyProfile = (req: Request, res: Response) => {
 };
 
 export const checkEmailExists = (req: Request, res: Response) => {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    db.get(
-        'SELECT id FROM profiles WHERE mail = ?',
-        [email],
-        (err, row) => {
-            if (err) {
-                res.status(500).json({
-                    exists: false,
-                    error: 'Błąd podczas sprawdzania emaila'
-                });
-                return;
-            }
+  db.get(
+    'SELECT id FROM profiles WHERE mail = ?',
+    [email],
+    (err, row) => {
+      if (err) {
+        res.status(500).json({
+          exists: false,
+          error: 'Błąd podczas sprawdzania emaila'
+        });
+        return;
+      }
 
-            res.json({ exists: !!row });
+      res.json({ exists: !!row });
+    }
+  );
+};
+
+
+export const uploadAvatar = (req: Request, res: Response): void => {
+  const userId = (req as any).user?.userId;
+  const file = req.file;
+
+ 
+
+  if (!file) {
+   
+    res.status(400).json({ error: 'Nie przesłano pliku' });
+    return;
+  }
+
+  const avatarPath = `/uploads/${file.filename}`;
+ 
+
+  try {
+    db.run(
+      'UPDATE profiles SET avatar = ? WHERE id = ?',
+      [avatarPath, userId],
+      function (err) {
+        if (err) {
+          console.error('[uploadAvatar] Błąd SQL:', err.message);
+          res.status(500).json({ error: err.message });
+          return;
         }
+       
+        res.json({ success: true, avatarPath });
+      }
     );
+  } catch (e: any) {
+    console.error('[uploadAvatar] Wyjątek:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 };
