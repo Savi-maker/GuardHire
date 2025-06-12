@@ -111,6 +111,7 @@ const HomeScreen: React.FC = () => {
     { id: '13', title: 'Sukces', route: 'Success' },
     { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
     { id: '16', title: 'Szczegóły(testy)', route: 'ItemDetails' },
+    { id: '17', title: 'Twoja lokalizacja', route: 'CurrentLocation' },
 
     ...(userRole === 'admin' ? [
       { id: '20', title: 'Panel Admina', route: 'AdminPanel' },

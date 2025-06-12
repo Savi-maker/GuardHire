@@ -25,6 +25,7 @@ import { RootStackParamList } from './src/navigation/types';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AdminPanelScreen from './src/screens/Admin/AdminPanelScreen';
+import CurrentLocationScreen from './src/screens/Location/CurrentLocationScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,6 +55,7 @@ export default function App() {
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />
           <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+          <Stack.Screen name="CurrentLocation" component={CurrentLocationScreen} options={{ headerShown: true, title: 'Twoja lokalizacja' }} />
         </Stack.Navigator>
       </NavigationContainer>
       <ErrorOverlay /> 
