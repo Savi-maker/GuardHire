@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMyProfile } from '../../utils/api';
+import { API_URL } from '../../utils/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -53,7 +54,13 @@ const UserProfileScreen: React.FC = () => {
     stanowisko: 'Nieznane',
     mail: 'brak@danych.pl',
     numertelefonu: '---',
+    avatar: '',
   };
+
+  const avatarSource =
+    typeof finalUser.avatar === 'string' && finalUser.avatar.length > 0
+      ? { uri: finalUser.avatar.startsWith('http') ? finalUser.avatar : `${API_URL}${finalUser.avatar}` }
+      : require('../../../assets/images/avatar.png');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
@@ -62,8 +69,10 @@ const UserProfileScreen: React.FC = () => {
       </View>
 
       <View style={styles.avatarContainer}>
-        <Image source={require('../../../assets/images/avatar.png')} style={styles.avatar} />
-        <Text style={[styles.name, { color: textColor }]}>{finalUser.imie} {finalUser.nazwisko}</Text>
+        <Image source={avatarSource} style={styles.avatar} />
+        <Text style={[styles.name, { color: textColor }]}>
+          {finalUser.imie} {finalUser.nazwisko}
+        </Text>
         <Text style={[styles.role, { color: textColor }]}>{finalUser.stanowisko}</Text>
       </View>
 
