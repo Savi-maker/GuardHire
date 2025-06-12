@@ -1,12 +1,16 @@
 {
+  // Najpierw baza Expo
+  "extends": "expo/tsconfig.base",
+
   "compilerOptions": {
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
-        "jsx": "react-native",
-        "esModuleInterop": true,
+    "jsx": "react-native",
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
+    /* ,"types": ["jest"]  // <- odkomentuj, jeśli używasz testów */
   },
-  "include": ["src"],
-  "extends": "expo/tsconfig.base"
+
+  "include": ["src"]
 }

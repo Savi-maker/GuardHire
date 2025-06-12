@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-export const API_URL = "http://192.168.0.19:3000";
-
+/* -------------------------------------------------- *
+ *  CONFIG
+ * -------------------------------------------------- */
+export const API_URL = 'http://192.168.74.47:3000';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -11,53 +12,45 @@ interface ApiResponse<T = any> {
   token?: string;
 }
 
-// Pobierz token JWT z localStorage
+/* -------------------------------------------------- *
+ *  JWT helpers
+ * -------------------------------------------------- */
 export async function getToken(): Promise<string | null> {
-  return await AsyncStorage.getItem('token');
+  return AsyncStorage.getItem('token');
 }
-
-// Zapisz token do localStorage
 export async function setToken(token: string): Promise<void> {
   await AsyncStorage.setItem('token', token);
 }
-
-// Usuń token (wyloguj)
 export async function removeToken(): Promise<void> {
   await AsyncStorage.removeItem('token');
 }
 
-// Logowanie użytkownika
+/* -------------------------------------------------- *
+ *  AUTH
+ * -------------------------------------------------- */
 export async function login(identifier: string, haslo: string): Promise<ApiResponse> {
   try {
     const res = await fetch(`${API_URL}/profiles/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ identifier, haslo })
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ identifier, haslo }),
     });
 
     const data = await res.json();
 
     if (data.token) {
-      // Token jest automatycznie zapisywany w localStorage
       await setToken(data.token);
       return { success: true, token: data.token };
     }
-
-    if (data.error) {
-      return { success: false, error: data.error };
-    }
-
-    return { success: false, error: 'Nieprawidłowy email lub hasło' };
-
-  } catch (error) {
+    return { success: false, error: data.error || 'Nieprawidłowy email lub hasło' };
+  } catch {
     return { success: false, error: 'Wystąpił problem z połączeniem. Spróbuj ponownie później.' };
   }
 }
 
-
+/* -------------------------------------------------- *
+ *  PROFILES
+ * -------------------------------------------------- */
 export type ProfileType = {
   id: number;
   imie: string;
@@ -69,7 +62,6 @@ export type ProfileType = {
   role: string;
 };
 
-// Rejestracja nowego użytkownika
 export async function registerProfile(data: {
   imie: string;
   nazwisko: string;
@@ -82,221 +74,184 @@ export async function registerProfile(data: {
   try {
     const res = await fetch(`${API_URL}/profiles/register`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(data),
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const responseData = await res.json();
-    return { success: true, data: responseData };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return { success: true, data: await res.json() };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Wystąpił nieznany błąd' };
   }
 }
 
-// Pobierz swój profil (po zalogowaniu, wymaga JWT)
 export async function getMyProfile(): Promise<ProfileType> {
-  try {
-    const token = await getToken();
-    if (!token) throw new Error('Brak tokenu autoryzacyjnego');
+  const token = await getToken();
+  if (!token) throw new Error('Brak tokenu autoryzacyjnego');
 
-    const res = await fetch(`${API_URL}/profiles/me`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      }
-    });
+  const res = await fetch(`${API_URL}/profiles/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`HTTP error ${res.status}`);
 
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  return res.json();
 }
 
-// Pobierz wszystkie profile (lista użytkowników)
 export async function getProfiles(): Promise<ApiResponse> {
   try {
-    const res = await fetch(`${API_URL}/profiles`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Wystąpił nieznany błąd' };
+    const res = await fetch(`${API_URL}/profiles`, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return { success: true, data: await res.json() };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Wystąpił nieznany błąd' };
   }
 }
 
-// Zmiana roli użytkownika
 export async function changeUserRole(id: number, role: string) {
   const token = await getToken();
   const res = await fetch(`${API_URL}/profiles/${id}/role`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ role }),
   });
   return res.json();
 }
 
-// ---------- NEWS ----------
-
-// Pobierz newsy
+/* -------------------------------------------------- *
+ *  NEWS
+ * -------------------------------------------------- */
 export async function getNews() {
-  const res = await fetch(`${API_URL}/news`);
-  return res.json();
+  return fetch(`${API_URL}/news`).then((r) => r.json());
 }
-
-// Dodaj news
 export async function addNews(title: string, description: string) {
   const token = await getToken();
   const res = await fetch(`${API_URL}/news`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ title, description })
+    body: JSON.stringify({ title, description }),
   });
   return res.json();
 }
 
-// ---------- NOTIFICATIONS ----------
-
-// Pobierz powiadomienia
+/* -------------------------------------------------- *
+ *  NOTIFICATIONS
+ * -------------------------------------------------- */
 export async function getNotifications() {
-  const res = await fetch(`${API_URL}/notifications`);
-  return res.json();
+  return fetch(`${API_URL}/notifications`).then((r) => r.json());
 }
-
-// Dodaj powiadomienie
-export async function addNotification(title: string, description: string, type: string = 'info') {
+export async function addNotification(title: string, description: string, type = 'info') {
   const res = await fetch(`${API_URL}/notifications`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description, type })
+    body: JSON.stringify({ title, description, type }),
   });
   return res.json();
 }
-
-// Oznacz powiadomienie jako przeczytane
 export async function markNotificationAsRead(id: number) {
-  const res = await fetch(`${API_URL}/notifications/${id}/read`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' }
-  });
-  return res.json();
+  return fetch(`${API_URL}/notifications/${id}/read`, { method: 'PATCH' }).then((r) => r.json());
 }
 
-// ---------- ZLECENIA ----------
-
-// Pobierz wszystkie zlecenia
+/* -------------------------------------------------- *
+ *  ORDERS (zlecenia)
+ * -------------------------------------------------- */
 export async function getOrders() {
-  const res = await fetch(`${API_URL}/orders`);
-  return res.json();
+  return fetch(`${API_URL}/orders`).then((r) => r.json());
 }
-
-// Dodaj zlecenie
 export async function addOrder(name: string, status: string, date: string) {
   const token = await getToken();
   const res = await fetch(`${API_URL}/orders`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ name, status, date })
+    body: JSON.stringify({ name, status, date }),
   });
   return res.json();
 }
-
-// Pobierz jedno zlecenie po ID
 export async function getOrder(id: number) {
-  const res = await fetch(`${API_URL}/orders/${id}`);
-  return res.json();
+  return fetch(`${API_URL}/orders/${id}`).then((r) => r.json());
 }
-
-// Edytuj zlecenie po ID
 export async function updateOrder(id: number, data: { name: string; status: string; date: string }) {
   const token = await getToken();
   const res = await fetch(`${API_URL}/orders/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   return res.json();
 }
-
-// Usuń zlecenie po ID
 export async function deleteOrder(id: number) {
   const token = await getToken();
   const res = await fetch(`${API_URL}/orders/${id}`, {
     method: 'DELETE',
-    headers: {
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-    }
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   return res.json();
 }
-
-// Aktualizacja statusu zlecenia
-export async function updateOrderStatus(orderId: string, status: string): Promise<any> {
-  const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+export async function updateOrderStatus(orderId: string, status: string) {
+  return fetch(`${API_URL}/orders/${orderId}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
-  });
-  return res.json();
+  }).then((r) => r.json());
 }
 
-// ---------- WPŁATY ----------
-
-// Lista wpłat
-export async function getPaymentList(): Promise<any[]> {
-  const res = await fetch(`${API_URL}/payment/list`);
-  return res.json();
+/* -------------------------------------------------- *
+ *  PAYMENTS
+ * -------------------------------------------------- */
+export async function getPaymentList() {
+  return fetch(`${API_URL}/payment/list`).then((r) => r.json());
 }
-
-// Tworzenie płatności
-export async function manualCreatePayment(orderId: string): Promise<any> {
-  const res = await fetch(`${API_URL}/payment/manual-create`, {
+export async function manualCreatePayment(orderId: string) {
+  return fetch(`${API_URL}/payment/manual-create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orderId}),
-  });
-  return res.json();
+    body: JSON.stringify({ orderId }),
+  }).then((r) => r.json());
 }
-
-
-
-// strzał z wpłaty do payu
-export async function payPayment(paymentId: string, email: string): Promise<Response> {
-  return await fetch(`${API_URL}/payment/pay`, {
+export async function payPayment(paymentId: string, email: string) {
+  return fetch(`${API_URL}/payment/pay`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ paymentId, email }),
   });
+}
+
+/* -------------------------------------------------- *
+ *  TASKS (do FormScreen)
+ * -------------------------------------------------- */
+export interface TaskPayload {
+  title: string;
+  description: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high';
+  dueDate: string | null; // ISO
+}
+
+/**
+ * Zapis zlecenia z ekranu formularza.
+ * Używamy tego samego zasobu, co reszta modułu orders: POST /orders
+ */
+export async function createTask(payload: TaskPayload) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+  return res.json();
 }
