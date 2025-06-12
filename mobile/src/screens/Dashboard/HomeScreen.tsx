@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNews } from '../../utils/api';
 import DetailScreen from '../Details/DetailScreen';
-import { getToken, removeToken, getMyProfile } from '../../utils/api';
+import { getToken, removeToken, getMyProfile,deleteNews,editNews } from '../../utils/api';
 
 
 type NewsType = { id: number, title: string, description: string };
@@ -117,15 +117,26 @@ const HomeScreen: React.FC = () => {
     ] : []),
   ];
 
-   const handleDelete = (id: number) => {
+   const handleDelete = async (id: number) => {
+  try {
     setModalVisible(false);
+    await deleteNews(id.toString()); 
     setNews(news.filter(n => n.id !== id));
-  };
+  } catch (error) {
+    setError('Błąd podczas usuwania aktualności.');
+  }
+};
 
-  const handleEdit = (id: number) => {
+  const handleEdit = async (id: number, title: string, description: string) => {
+  try {
     setModalVisible(false);
-    setError('Opcja edycji jeszcze niezaimplementowana!');
-  };
+    await editNews(id.toString(), title, description); 
+    setNews(news.map(n => n.id === id ? { ...n, title, description } : n));
+    setError(''); 
+  } catch (error) {
+    setError('Błąd podczas edycji aktualności.');
+  }
+};
 
   useEffect(() => {
   getMyProfile()
@@ -226,7 +237,8 @@ const HomeScreen: React.FC = () => {
         onClose={() => setModalVisible(false)}
         news={selectedNews || { id: 0, title: '', description: '' }}
         onDelete={handleDelete}
-        onEdit={handleEdit}
+        onEdit={handleEdit} 
+        
       />
 
       <Modal transparent visible={menuVisible} animationType="none">

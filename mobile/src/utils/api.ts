@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export const API_URL = "http://192.168.0.130:3000";
+export const API_URL = "http://192.168.1.111:3000";
 
 
 
@@ -202,6 +202,31 @@ export async function addNews(title: string, description: string) {
   return res.json();
 }
 
+//Edycha news
+export async function editNews(id: string, title: string, description: string) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/news/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    },
+    body: JSON.stringify({ title, description })
+  });
+  return res.json();
+}
+
+// Usuń news
+export async function deleteNews(id: string) {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/news/${id}`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    }
+  });
+  return res.json();
+}
 // ---------- NOTIFICATIONS ----------
 
 // Pobierz powiadomienia

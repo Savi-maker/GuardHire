@@ -15,3 +15,24 @@ export const addNews = (req, res) => {
     res.json({ id: this.lastID, title, description });
   });
 };
+// @ts-ignore
+export const editNews = (req, res) => {
+  const { id } = req.params;
+  const { title, description } = req.body;
+  db.run(
+    'UPDATE news SET title = ?, description = ? WHERE id = ?',
+    [title, description, id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id, title, description });
+    }
+  );
+};
+// @ts-ignore
+export const deleteNews = (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM news WHERE id = ?', [id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'News został usunięty.' });
+  });
+};
