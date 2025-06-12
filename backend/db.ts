@@ -40,7 +40,8 @@ db.serialize(() => {
      numertelefonu TEXT,
      stanowisko TEXT,
      haslo TEXT,
-     role TEXT DEFAULT 'user'
+     role TEXT DEFAULT 'user',
+     avatar TEXT
   )
 `);
 

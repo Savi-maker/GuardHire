@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+  View
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../utils/api';
+import * as ImagePicker from 'expo-image-picker';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,6 +34,7 @@ const EditProfileScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +56,7 @@ const EditProfileScreen: React.FC = () => {
         setName(`${data.imie} ${data.nazwisko}`);
         setEmail(data.mail);
         setPhone(data.numertelefonu);
+        setAvatar(data.avatar ? `${API_URL}${data.avatar}` : null);
       } catch (error) {
         Alert.alert('Błąd', 'Nie udało się pobrać danych profilu.');
         console.error(error);
@@ -89,6 +104,74 @@ const EditProfileScreen: React.FC = () => {
     }
   };
 
+  const handlePickAvatar = async () => {
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) {
+      Alert.alert('Brak uprawnień', 'Musisz wyrazić zgodę na użycie aparatu.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      const uri = result.assets[0].uri;
+      setAvatar(uri);
+      await uploadAvatar(uri);
+    }
+  };
+
+  const handlePickFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      const uri = result.assets[0].uri;
+      setAvatar(uri);
+      await uploadAvatar(uri);
+    }
+  };
+
+  const uploadAvatar = async (uri: string) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('Brak tokenu');
+
+    const filename = uri.split('/').pop() || 'avatar.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const ext = match?.[1]?.toLowerCase() || 'jpg';
+    const type = `image/${ext}`;
+
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri,
+      type,
+      name: filename,
+    } as any);
+
+    const res = await fetch(`${API_URL}/profiles/me/avatar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // NIE dodawaj 'Content-Type'!
+      },
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    Alert.alert('Sukces', 'Awatar został zapisany.');
+  } catch (err) {
+    Alert.alert('Błąd', 'Nie udało się przesłać awatara.');
+    console.error(err);
+  }
+};
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor, justifyContent: 'center', alignItems: 'center' }]}>
@@ -97,11 +180,25 @@ const EditProfileScreen: React.FC = () => {
     );
   }
 
+  const avatarSource = avatar
+    ? { uri: avatar }
+    : require('../../../assets/images/avatar.png');
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           <Text style={[styles.headerText, { color: textColor }]}>Edytuj profil</Text>
+
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <Image source={avatarSource} style={{ width: 100, height: 100, borderRadius: 50, marginBottom: 10 }} />
+            <TouchableOpacity onPress={handlePickAvatar}>
+              <Text style={{ color: textColor, marginBottom: 5 }}>📷 Zrób zdjęcie</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handlePickFromGallery}>
+              <Text style={{ color: textColor }}>🖼️ Wybierz z galerii</Text>
+            </TouchableOpacity>
+          </View>
 
           <Text style={[styles.label, { color: textColor }]}>Imię i nazwisko</Text>
           <TextInput
