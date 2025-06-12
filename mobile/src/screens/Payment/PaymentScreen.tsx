@@ -17,8 +17,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import {
   getPaymentList,
-  payPayment
-} from '../../utils/api'
+  payPayment,
+  getMyProfile,
+  confirmPayment
+} from '../../utils/api';
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
 
 type PaymentItem = {
@@ -47,6 +50,7 @@ const PaymentScreen: React.FC = () => {
 
   const [zaleglosci, setZaleglosci] = useState<PaymentItem[]>([]);
   const [historia, setHistoria] = useState<PaymentItem[]>([]);
+  const [isAdmin, setIsAdmin] = useState(true);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -54,6 +58,13 @@ const PaymentScreen: React.FC = () => {
 
   useEffect(() => {
     (async () => {
+      try {
+        const profile = await getMyProfile();
+        setIsAdmin(profile.role === 'admin');
+      } catch {
+        setIsAdmin(false);
+      }
+
       try {
         const data = await getPaymentList();
         setZaleglosci(data.filter(i => i.status === 'pending'));
@@ -88,6 +99,18 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
+  const handleZatwierdz = async (id: string) => {
+    const res = await confirmPayment(id);
+    if (res.success) {
+      Alert.alert('Sukces', 'Płatność zatwierdzona');
+      const data = await getPaymentList();
+      setZaleglosci(data.filter(i => i.status === 'pending'));
+      setHistoria(data.filter(i => i.status !== 'pending'));
+    } else {
+      Alert.alert('Błąd', res.error || 'Nie udało się zatwierdzić');
+    }
+  };
+
   const renderCard = (
     item: PaymentItem,
     pageType: 'zaleglosci' | 'historia'
@@ -111,12 +134,22 @@ const PaymentScreen: React.FC = () => {
         <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
 
         {isPending ? (
-          <TouchableOpacity
-            style={styles.btnUnpaid}
-            onPress={() => handleOplac(item.id, item.amount)}
-          >
-            <Text style={styles.btnText}>💸 Opłać</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.btnUnpaid}
+              onPress={() => handleOplac(item.id, item.amount)}
+            >
+              <Text style={styles.btnText}>💸 Opłać</Text>
+            </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.btnTechConfirm}
+                onPress={() => handleZatwierdz(item.id)}
+              >
+                <Text style={styles.btnText}>[TECH] Zatwierdź</Text>
+              </TouchableOpacity>
+            )}
+          </>
         ) : (
           <View style={styles.btnCompletedNonClickable}>
             <Text style={styles.btnText}>Opłacono</Text>
@@ -228,6 +261,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: '#FFD700',
     paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  btnTechConfirm: {
+    marginTop: 8,
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
     borderRadius: 6,
     alignItems: 'center',
   },
