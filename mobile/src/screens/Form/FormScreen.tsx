@@ -20,13 +20,9 @@ const FormScreen: React.FC = () => {
     severity: 'success',
   });
 
-  // Dropdown menu (Paper Menu) state
   const [menuVisible, setMenuVisible] = useState(false);
 
   const navigate = (path: string) => {
-    // Możesz użyć react-navigation w prawdziwym RN/Expo projekcie
-    // navigation.navigate(path);
-    // Tu tylko przykładowo:
     setSnackbar({ open: true, message: `Nawigacja do ${path}`, severity: 'success' });
   };
 
@@ -53,7 +49,7 @@ const FormScreen: React.FC = () => {
       try {
         // const cat = await getCategories();
         // setCategories(cat);
-        setCategories(['Sprzątanie', 'Zakupy', 'Opieka', 'Transport']); // przykładowe kategorie
+        setCategories(['Sprzątanie', 'Zakupy', 'Opieka', 'Transport']); 
       } catch (err) {
         setSnackbar({ open: true, message: 'Nie udało się pobrać kategorii.', severity: 'error' });
       }

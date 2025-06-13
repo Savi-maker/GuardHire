@@ -159,7 +159,6 @@ const EditProfileScreen: React.FC = () => {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        // NIE dodawaj 'Content-Type'!
       },
       body: formData,
     });

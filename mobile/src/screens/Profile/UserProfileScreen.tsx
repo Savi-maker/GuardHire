@@ -29,6 +29,7 @@ const UserProfileScreen: React.FC = () => {
         setUser(profile);
       } catch (error) {
         console.error('Błąd ładowania profilu:', error);
+        setError('Błąd ładowania profilu:');
         setUser(null);
       } finally {
         setLoading(false);
@@ -120,3 +121,7 @@ const styles = StyleSheet.create({
   },
   editText: { fontSize: 16, fontWeight: '600' },
 });
+function setError(arg0: string) {
+  throw new Error('Function not implemented.');
+}
+
