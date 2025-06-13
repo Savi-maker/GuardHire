@@ -105,24 +105,66 @@ export async function registerProfile(data: {
 }
 
 // Resetowanie hasła
-export async function checkEmailExists(email: string): Promise<boolean> {
+
+export async function resetPassword(data: {
+  mail: string;
+  imie: string;
+  nazwisko: string;
+  newPassword: string;
+}): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_URL}/profiles/check-email`, {
+    // Najpierw sprawdzamy czy dane się zgadzają
+    const verifyResponse = await fetch(`${API_URL}/profiles/verify-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        mail: data.mail,
+        imie: data.imie,
+        nazwisko: data.nazwisko
+      }),
     });
 
-    const data = await response.json();
-    return data.exists;
+    const verifyData = await verifyResponse.json();
+
+    if (!verifyResponse.ok || !verifyData.exists) {
+      return {
+        success: false,
+        error: verifyData.message || 'Podane dane są nieprawidłowe lub użytkownik nie istnieje'
+      };
+    }
+
+    // Jeśli weryfikacja się powiodła, resetujemy hasło
+    const resetResponse = await fetch(`${API_URL}/profiles/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const resetData = await resetResponse.json();
+
+    if (!resetResponse.ok) {
+      return {
+        success: false,
+        error: resetData.message || 'Wystąpił błąd podczas resetowania hasła'
+      };
+    }
+
+    return {
+      success: true,
+      data: resetData
+    };
+
   } catch (error) {
-    console.error('Błąd podczas sprawdzania emaila:', error);
-    throw error;
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: 'Wystąpił nieznany błąd' };
   }
 }
-
 
 // Pobierz swój profil (po zalogowaniu, wymaga JWT)
 export async function getMyProfile(): Promise<ProfileType> {
