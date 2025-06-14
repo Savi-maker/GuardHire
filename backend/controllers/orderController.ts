@@ -9,16 +9,20 @@ export const getOrders = (req: Request, res: Response) => {
 };
 
 export const addOrder = (req: Request, res: Response) => {
-  const { name, status, date } = req.body;
+  const { name, status, date, opis, lat, lng, paymentStatus } = req.body;
+console.log('BODY:', req.body);
   db.run(
-    'INSERT INTO orders (name, status, date) VALUES (?, ?, ?)',
-    [name, status, date],
+    `INSERT INTO orders (name, status, date, opis, lat, lng, paymentStatus)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, status, date, opis, lat, lng, paymentStatus || 'unpaid'],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, name, status, date });
+      res.json({ id: this.lastID, name, status, date, opis, lat, lng, paymentStatus: paymentStatus || 'unpaid' });
     }
   );
+  console.log("BODY:", req.body);
 };
+
 
 export const getOrderById = (req: Request, res: Response) => {
   const { id } = req.params;

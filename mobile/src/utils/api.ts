@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export const API_URL = "http://192.168.0.19:3000";
+export const API_URL = "http://10.100.0.48:3000";
 
 
 
@@ -305,18 +305,41 @@ export async function getOrders() {
 }
 
 // Dodaj zlecenie
-export async function addOrder(name: string, status: string, date: string) {
+export async function addOrder(
+  name: string,
+  status: string,
+  opis: string,
+  lat: number,
+  lng: number
+) {
+  const date = new Date().toISOString();
   const token = await getToken();
+
   const res = await fetch(`${API_URL}/orders`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
-    body: JSON.stringify({ name, status, date })
+    body: JSON.stringify({
+      name,
+      status,
+      date,
+      opis,
+      lat,
+      lng,
+      paymentStatus: 'unpaid'
+    })
   });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Błąd ${res.status}: ${errorText}`);
+  }
+
   return res.json();
 }
+
 
 // Pobierz jedno zlecenie po ID
 export async function getOrder(id: number) {
@@ -325,7 +348,15 @@ export async function getOrder(id: number) {
 }
 
 // Edytuj zlecenie po ID
-export async function updateOrder(id: number, data: { name: string; status: string; date: string }) {
+export async function updateOrder(id: number, data: {
+  name: string;
+  status: string;
+  date: string;
+  opis?: string;
+  lat?: number;
+  lng?: number;
+  paymentStatus?: string;
+}) {
   const token = await getToken();
   const res = await fetch(`${API_URL}/orders/${id}`, {
     method: 'PUT',
@@ -337,6 +368,7 @@ export async function updateOrder(id: number, data: { name: string; status: stri
   });
   return res.json();
 }
+
 
 // Usuń zlecenie po ID
 export async function deleteOrder(id: number) {

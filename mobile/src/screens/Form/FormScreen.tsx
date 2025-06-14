@@ -1,209 +1,179 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { TextInput, Button, Snackbar, ActivityIndicator, HelperText, Text, Menu, Divider } from 'react-native-paper';
+import React, { useState } from 'react';
+import { StyleSheet, ScrollView, TextInput, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigation } from '@react-navigation/native';
+import MapView, { Marker, MapPressEvent } from 'react-native-maps';
+import { addOrder } from '../../utils/api'; 
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 export interface FormInputs {
-  title: string;
-  description: string;
-  category: string;
+  name: string;
+  opis: string;
 }
 
 const FormScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { control, handleSubmit, reset, formState: { errors }, setValue } = useForm<FormInputs>();
-  const [categories, setCategories] = useState<string[]>([]);
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<FormInputs>();
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(null);
 
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  const navigate = (path: string) => {
-    setSnackbar({ open: true, message: `Nawigacja do ${path}`, severity: 'success' });
+  const onMapPress = (event: MapPressEvent) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setMarker({ lat: latitude, lng: longitude });
   };
 
   const onSubmit = async (data: FormInputs) => {
+    if (!marker) {
+      Alert.alert('Błąd', 'Proszę zaznaczyć lokalizację na mapie.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // await createTask(data);
-      reset();
-      setSnackbar({ open: true, message: 'Zlecenie zostało zapisane!', severity: 'success' });
-      setTimeout(() => navigate('success'), 1000);
-    } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message: error?.response?.data?.error || 'Wystąpił błąd przy zapisie.',
-        severity: 'error',
-      });
+      const date = new Date().toISOString();
+      const status = 'nowe';
+
+      const response = await addOrder(
+        data.name,
+        status,
+        data.opis,
+        marker.lat,
+        marker.lng
+      );
+
+      if (!response.success) {
+        Alert.alert('Sukces', 'Zlecenie zostało zapisane.');
+        reset();
+        setMarker(null);
+        navigation.goBack();
+      } else {
+        Alert.alert('Błąd', response.error || 'Nie udało się dodać zlecenia.');
+      }
+    } catch (error) {
+      Alert.alert('Błąd', 'Wystąpił problem z połączeniem.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        // const cat = await getCategories();
-        // setCategories(cat);
-        setCategories(['Sprzątanie', 'Zakupy', 'Opieka', 'Transport']); 
-      } catch (err) {
-        setSnackbar({ open: true, message: 'Nie udało się pobrać kategorii.', severity: 'error' });
-      }
-    };
-    fetchCategories();
-  }, []);
-
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
-      <Text variant="headlineMedium" style={{ marginBottom: 24 }}>Dodaj nowe zlecenie</Text>
-      
-      <Controller
-        control={control}
-        name="title"
-        rules={{ required: 'Tytuł jest wymagany' }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <TextInput
-              label="Tytuł"
-              mode="outlined"
-              value={value}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              error={!!errors.title}
-              style={styles.input}
-            />
-            <HelperText type="error" visible={!!errors.title}>
-              {errors.title?.message}
-            </HelperText>
-          </>
-        )}
-      />
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
+        <Text style={styles.title}>Dodaj nowe zlecenie</Text>
 
-      <Controller
-        control={control}
-        name="description"
-        rules={{ required: 'Opis jest wymagany' }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <TextInput
-              label="Opis"
-              mode="outlined"
-              value={value}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              error={!!errors.description}
-              style={styles.input}
-              multiline
-              numberOfLines={4}
-            />
-            <HelperText type="error" visible={!!errors.description}>
-              {errors.description?.message}
-            </HelperText>
-          </>
-        )}
-      />
+        <Controller
+          control={control}
+          name="name"
+          rules={{ required: 'Nazwa zlecenia jest wymagana' }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <>
+              <TextInput
+                placeholder="Nazwa zlecenia"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                style={[styles.input, errors.name && styles.inputError]}
+              />
+              {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+            </>
+          )}
+        />
 
-      <Controller
-        control={control}
-        name="category"
-        rules={{ required: 'Kategoria jest wymagana' }}
-        render={({ field: { value, onChange } }) => (
-          <>
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <TextInput
-                  label="Kategoria"
-                  mode="outlined"
-                  value={value}
-                  style={styles.input}
-                  onFocus={() => setMenuVisible(true)}
-                  showSoftInputOnFocus={false}
-                  right={<TextInput.Icon icon="menu-down" onPress={() => setMenuVisible(true)} />}
-                  error={!!errors.category}
-                  editable={false}
-                />
-              }
-            >
-              {categories.map((cat) => (
-                <Menu.Item
-                  key={cat}
-                  title={cat}
-                  onPress={() => {
-                    onChange(cat);
-                    setMenuVisible(false);
-                  }}
-                />
-              ))}
-              <Divider />
-            </Menu>
-            <HelperText type="error" visible={!!errors.category}>
-              {errors.category?.message}
-            </HelperText>
-          </>
-        )}
-      />
+        <Controller
+          control={control}
+          name="opis"
+          rules={{ required: 'Opis jest wymagany' }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <>
+              <TextInput
+                placeholder="Opis zlecenia"
+                value={value}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                style={[styles.input, styles.multilineInput, errors.opis && styles.inputError]}
+                multiline
+                numberOfLines={4}
+              />
+              {errors.opis && <Text style={styles.errorText}>{errors.opis.message}</Text>}
+            </>
+          )}
+        />
 
-      <View style={styles.buttonRow}>
-        <Button
-          mode="contained"
+        <Text style={{ marginBottom: 8 }}>Zaznacz miejsce na mapie:</Text>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: 51.107883, 
+            longitude: 17.038538,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
+          onPress={onMapPress}
+        >
+          {marker && (
+            <Marker coordinate={{ latitude: marker.lat, longitude: marker.lng }} />
+          )}
+        </MapView>
+
+        <Pressable
           onPress={handleSubmit(onSubmit)}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           disabled={loading}
-          style={{ flex: 1, marginRight: 8 }}
-          icon={loading ? 'progress-clock' : undefined}
         >
-          {loading ? <ActivityIndicator size={18} /> : 'Zapisz'}
-        </Button>
-        <Button
-          mode="outlined"
-          onPress={() => navigation.goBack()}
-          style={{ flex: 1 }}
-        >
-          Wróć do menu
-        </Button>
-      </View>
-
-      <Snackbar
-        visible={snackbar.open}
-        onDismiss={() => setSnackbar((s) => ({ ...s, open: false }))}
-        duration={3000}
-        style={{
-          backgroundColor: snackbar.severity === 'success' ? '#4caf50' : '#d32f2f'
-        }}
-      >
-        {snackbar.message}
-      </Snackbar>
-    </ScrollView>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Zapisz zlecenie</Text>}
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 56,
+    padding: 16,
     backgroundColor: '#fff',
-    borderRadius: 14,
-    elevation: 3, 
-    shadowColor: '#000', 
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    flex:1,
-    shadowOffset: { width: 0, height: 2 },
+    flex: 1,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
   input: {
+    borderWidth: 1,
+    borderColor: '#aaa',
+    borderRadius: 6,
+    padding: 12,
     marginBottom: 8,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 24,
+  inputError: {
+    borderColor: '#d32f2f',
+  },
+  multilineInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  errorText: {
+    color: '#d32f2f',
     marginBottom: 8,
+  },
+  map: {
+    height: 300,
+    borderRadius: 6,
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: '#4caf50',
+    padding: 14,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });
-
 
 export default FormScreen;
