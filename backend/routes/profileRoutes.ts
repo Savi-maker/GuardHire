@@ -7,7 +7,8 @@ import {
   changeUserRole,
   updateMyProfile,
   uploadAvatar,
-  upload
+  upload,
+  checkEmailExists
 } from '../controllers/profileController';
 import { authenticateJWT, requireRole } from '../middleware/auth';
 
@@ -21,5 +22,5 @@ router.get('/me', authenticateJWT, getMyProfile);
 router.patch('/me', authenticateJWT, updateMyProfile);
 router.patch('/:id/role', authenticateJWT, requireRole('admin'), changeUserRole);
 router.post('/me/avatar', authenticateJWT, upload, uploadAvatar);
-
+router.post('/check-email', checkEmailExists);
 export default router;
