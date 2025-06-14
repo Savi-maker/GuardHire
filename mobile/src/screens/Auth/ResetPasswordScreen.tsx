@@ -5,7 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
-import { checkEmailExists } from '../../utils/api';
+import { resetPassword } from '../../utils/api';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -66,10 +66,15 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onCl
 const ResetPasswordScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
+  const [imie, setImie] = useState('');
+  const [nazwisko, setNazwisko] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [language, setLanguage] = useState<string>('pl');
   const [modalVisible, setModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   const [modalConfig, setModalConfig] = useState<{
     title: string;
@@ -98,6 +103,10 @@ const ResetPasswordScreen: React.FC = () => {
     return emailRegex.test(email);
   };
 
+  const validatePassword = (password: string): boolean => {
+    return password.length >= 8;
+  };
+
   const changeLanguage = async (lang: string) => {
     try {
       setLanguage(lang);
@@ -114,10 +123,10 @@ const ResetPasswordScreen: React.FC = () => {
 
   const handleResetPassword = async () => {
     setEmailError(false);
+    setPasswordError(false);
 
-    if (!email) {
-      setEmailError(true);
-      showModal('Błąd', 'Proszę podać adres email', 'error');
+    if (!email || !imie || !nazwisko || !newPassword || !confirmPassword) {
+      showModal('Błąd', 'Wszystkie pola są wymagane', 'error');
       return;
     }
 
@@ -127,19 +136,34 @@ const ResetPasswordScreen: React.FC = () => {
       return;
     }
 
+    if (!validatePassword(newPassword)) {
+      setPasswordError(true);
+      showModal('Błąd', 'Hasło musi mieć co najmniej 8 znaków', 'error');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError(true);
+      showModal('Błąd', 'Hasła nie są identyczne', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const emailExists = await checkEmailExists(email);
-      
-      if (!emailExists) {
-        showModal('Błąd', 'Podany adres email nie istnieje w naszej bazie', 'error');
-        return;
-      }
+      const response = await resetPassword({
+        mail: email,
+        imie,
+        nazwisko,
+        newPassword
+      });
 
-      showModal('Sukces', 'Link do resetowania hasła został wysłany na podany adres email', 'success');
-      
+      if (response.success) {
+        showModal('Sukces', 'Hasło zostało zmienione pomyślnie', 'success');
+      } else {
+        showModal('Błąd', response.error || 'Wystąpił błąd podczas resetowania hasła', 'error');
+      }
     } catch (error) {
-      showModal('Błąd', 'Wystąpił błąd podczas weryfikacji adresu email', 'error');
+      showModal('Błąd', 'Wystąpił błąd podczas resetowania hasła', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -161,10 +185,7 @@ const ResetPasswordScreen: React.FC = () => {
               <Text style={styles.title}>Reset hasła</Text>
 
               <TextInput
-                  style={[
-                    styles.input,
-                    emailError && styles.inputError
-                  ]}
+                  style={[styles.input, emailError && styles.inputError]}
                   placeholder="Email"
                   placeholderTextColor="#aaa"
                   keyboardType="email-address"
@@ -175,7 +196,50 @@ const ResetPasswordScreen: React.FC = () => {
                     setEmailError(false);
                   }}
                   accessibilityLabel="Pole email"
-                  accessibilityHint="Wprowadź swój adres email"
+              />
+
+              <TextInput
+                  style={styles.input}
+                  placeholder="Imię"
+                  placeholderTextColor="#aaa"
+                  value={imie}
+                  onChangeText={setImie}
+                  accessibilityLabel="Pole imię"
+              />
+
+              <TextInput
+                  style={styles.input}
+                  placeholder="Nazwisko"
+                  placeholderTextColor="#aaa"
+                  value={nazwisko}
+                  onChangeText={setNazwisko}
+                  accessibilityLabel="Pole nazwisko"
+              />
+
+              <TextInput
+                  style={[styles.input, passwordError && styles.inputError]}
+                  placeholder="Nowe hasło"
+                  placeholderTextColor="#aaa"
+                  secureTextEntry
+                  value={newPassword}
+                  onChangeText={(text) => {
+                    setNewPassword(text);
+                    setPasswordError(false);
+                  }}
+                  accessibilityLabel="Pole nowe hasło"
+              />
+
+              <TextInput
+                  style={[styles.input, passwordError && styles.inputError]}
+                  placeholder="Powtórz nowe hasło"
+                  placeholderTextColor="#aaa"
+                  secureTextEntry
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    setPasswordError(false);
+                  }}
+                  accessibilityLabel="Pole powtórz hasło"
               />
 
               <TouchableOpacity
@@ -187,7 +251,7 @@ const ResetPasswordScreen: React.FC = () => {
                 {isLoading ? (
                     <ActivityIndicator color="#fff" />
                 ) : (
-                    <Text style={styles.loginButtonText}>Wyślij link resetujący</Text>
+                    <Text style={styles.loginButtonText}>Zmień hasło</Text>
                 )}
               </TouchableOpacity>
 
@@ -308,7 +372,7 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     justifyContent: 'center',
-    paddingTop: '20%',
+    paddingTop: '80%',
   },
   content: {},
   title: {
@@ -319,7 +383,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   input: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     paddingHorizontal: 16,
