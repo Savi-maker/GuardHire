@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export const API_URL = "http://10.100.0.48:3000";
+export const API_URL = "http://192.168.1.111:3000";
 
 
 
@@ -222,6 +222,24 @@ export async function changeUserRole(id: number, role: string) {
   return res.json();
 }
 
+// Pobierz listę ochroniarzy
+export async function getGuards(): Promise<ApiResponse<ProfileType[]>> {
+  try {
+    const res = await fetch(`${API_URL}/profiles/guards`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const data = await res.json();
+    return { success: true, data };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: 'Wystąpił nieznany błąd' };
+  }
+}
 // ---------- NEWS ----------
 
 // Pobierz newsy
@@ -299,8 +317,13 @@ export async function markNotificationAsRead(id: number) {
 // ---------- ZLECENIA ----------
 
 // Pobierz wszystkie zlecenia
-export async function getOrders() {
-  const res = await fetch(`${API_URL}/orders`);
+export async function getOrders(userId?: number, role?: string) {
+  let url = `${API_URL}/orders`;
+  if (userId && role) {
+    url += `?userId=${userId}&role=${role}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
   return res.json();
 }
 
@@ -308,11 +331,13 @@ export async function getOrders() {
 export async function addOrder(
   name: string,
   status: string,
+  date: string,
   opis: string,
   lat: number,
-  lng: number
+  lng: number,
+  createdBy: number,
+  assignedGuard: number
 ) {
-  const date = new Date().toISOString();
   const token = await getToken();
 
   const res = await fetch(`${API_URL}/orders`, {
@@ -328,7 +353,9 @@ export async function addOrder(
       opis,
       lat,
       lng,
-      paymentStatus: 'unpaid'
+      paymentStatus: 'unpaid',
+      createdBy,
+      assignedGuard
     })
   });
 
@@ -392,11 +419,22 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
   return res.json();
 }
 
+export async function getMyOrders(userId: number) {
+  const res = await fetch(`${API_URL}/orders/my?userId=${userId}`);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
 // ---------- WPŁATY ----------
 
 // Lista wpłat
-export async function getPaymentList(): Promise<any[]> {
-  const res = await fetch(`${API_URL}/payment/list`);
+export async function getPaymentList(userId?: number, role?: string) {
+  let url = `${API_URL}/payment/list`;
+  if (userId && role) {
+    url += `?userId=${userId}&role=${role}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
   return res.json();
 }
 

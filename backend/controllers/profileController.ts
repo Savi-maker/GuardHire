@@ -53,7 +53,6 @@ export const addProfile = async (req: Request, res: Response) => {
 export const login = (req: Request, res: Response) => {
   const { identifier, haslo } = req.body;
 
-  // ⬇️ Definicja tymczasowego typu tylko dla tej funkcji
   type DbUser = {
     id: number;
     mail: string;
@@ -103,7 +102,7 @@ export const getMyProfile = (req: Request, res: Response) => {
 export const changeUserRole = (req: Request, res: Response) => {
   const { id } = req.params;
   const { role } = req.body;
-  const allowedRoles = ['admin', 'headuser', 'user'];
+  const allowedRoles = ['admin', 'headuser', 'user','guard'];
   if (!allowedRoles.includes(role)) {
     res.status(400).json({ error: 'Nieprawidłowa rola' });
     return;
@@ -117,6 +116,7 @@ export const changeUserRole = (req: Request, res: Response) => {
       res.status(404).json({ error: 'Nie znaleziono użytkownika' });
       return;
     }
+    console.log(`Zmieniono role usera ${id} na ${role}`);
     res.json({ success: true, id, role });
   });
 };
@@ -202,3 +202,16 @@ export const uploadAvatar = (req: Request, res: Response): void => {
     res.status(500).json({ error: e.message });
   }
 };
+export const getGuards = (req: Request, res: Response) => {
+  db.all(
+    'SELECT id, imie, nazwisko, username, mail, numertelefonu, stanowisko, avatar FROM profiles WHERE role = ?',
+    ['guard'],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Błąd pobierania ochroniarzy: ' + err.message });
+      }
+      res.json(rows);
+    }
+  );
+};
+

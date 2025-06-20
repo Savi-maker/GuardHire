@@ -13,6 +13,7 @@ type User = {
 const ROLE_LABELS = [
   { rola: 'admin', label: 'Administrator' },
   { rola: 'headuser', label: 'Kierownik' },
+  { rola: 'guard', label: 'Ochroniarz' },
   { rola: 'user', label: 'Użytkownik' },
 ];
 

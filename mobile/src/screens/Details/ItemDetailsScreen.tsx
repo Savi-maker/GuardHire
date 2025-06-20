@@ -1,163 +1,151 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Button, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../ThemeContext/ThemeContext';
+import { getOrder } from '../../utils/api';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/types';
 
-// Typy
+type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetails'>;
 
-type Order = {
-  id: number;
-  name: string;
-  status: string;
-  date: string;
-  opis?: string;
-  lat?: number;
-  lng?: number;
-};
-
-type Comment = {
-  id: number;
-  author: string;
-  content: string;
-  rating?: number;
-};
-
-const ItemDetailsScreen = () => {
+const ItemDetailsScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [order, setOrder] = useState<Record<string, any> | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [rating, setRating] = useState('');
-
-  const mockOrderId = 1;
+  const { orderId } = route.params;
 
   useEffect(() => {
-    const mockOrder: Order = {
-      id: mockOrderId,
-      name: 'Testowe Zlecenie',
-      status: 'W trakcie',
-      date: '2024-06-07T10:00:00Z',
-      opis: 'To jest opis testowego zlecenia. Sprawdzenie lokalizacji i działania komentarzy.',
-      lat: 50.866,
-      lng: 20.628,
-    };
+    (async () => {
+      try {
+        const data = await getOrder(orderId);
+        setOrder(data);
+      } catch (err) {
+        console.error('Błąd pobierania zlecenia:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [orderId]);
 
-    const mockComments: Comment[] = [
-      { id: 1, author: 'Anna', content: 'Wszystko przebiegło pomyślnie.', rating: 5 },
-      { id: 2, author: 'Janusz', content: 'Były drobne problemy.', rating: 3 },
-    ];
+  const backgroundColor = isDark ? '#121212' : '#f9f9f9';
+  const cardBg = isDark ? '#1e1e1e' : '#fff';
+  const textColor = isDark ? '#fff' : '#000';
+  const subText = isDark ? '#ccc' : '#555';
 
-    setTimeout(() => {
-      setOrder(mockOrder);
-      setComments(mockComments);
-    }, 500);
-  }, []);
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.loaderContainer, { backgroundColor }]}>
+        <ActivityIndicator size="large" color={isDark ? '#2196F3' : '#007AFF'} />
+      </SafeAreaView>
+    );
+  }
 
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-
-    const newId = comments.length + 1;
-    const parsedRating = parseInt(rating);
-    const commentToAdd: Comment = {
-      id: newId,
-      author: 'Jan Kowalski',
-      content: newComment.trim(),
-      rating: isNaN(parsedRating) ? undefined : parsedRating,
-    };
-
-    setComments((prev) => [...prev, commentToAdd]);
-    setNewComment('');
-    setRating('');
-  };
-
-  const background = isDark ? '#121212' : '#fff';
-  const text = isDark ? '#fff' : '#000';
-  const border = isDark ? '#444' : '#ccc';
-
-  if (!order) return <Text style={[styles.title, { color: text }]}>Ładowanie danych testowych...</Text>;
+  if (!order) {
+    return (
+      <SafeAreaView style={[styles.loaderContainer, { backgroundColor }]}>
+        <Text style={{ color: textColor }}>Nie udało się załadować zlecenia.</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: background }]}>
-      <Text style={[styles.title, { color: text }]}>{order.name}</Text>
-      <Text style={[styles.label, { color: text }]}>Status:</Text>
-      <Text style={{ color: text }}>{order.status}</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor }}>
+      <ScrollView style={styles.container}>
+        <View style={[styles.card, { backgroundColor: cardBg }]}>
+          <Text style={[styles.title, { color: textColor }]}>{order.name ?? 'Brak nazwy'}</Text>
 
-      <Text style={[styles.label, { color: text }]}>Data:</Text>
-      <Text style={{ color: text }}>{new Date(order.date).toLocaleDateString()}</Text>
+          <Text style={[styles.label, { color: subText }]}>Status</Text>
+          <Text style={{ color: textColor }}>{order.status ?? 'Brak'}</Text>
 
-      <Text style={[styles.label, { color: text }]}>Opis:</Text>
-      <Text style={{ color: text }}>{order.opis ?? 'Brak opisu'}</Text>
+          <Text style={[styles.label, { color: subText }]}>Data utworzenia</Text>
+          <Text style={{ color: textColor }}>
+            {order.date ? new Date(order.date).toLocaleString() : 'Brak'}
+          </Text>
 
-      {order.lat && order.lng && (
-        <>
-          <Text style={[styles.label, { color: text }]}>Lokalizacja:</Text>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: order.lat,
-              longitude: order.lng,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            <Marker
-              coordinate={{ latitude: order.lat, longitude: order.lng }}
-              title={order.name}
-            />
-          </MapView>
-        </>
-      )}
+          <Text style={[styles.label, { color: subText }]}>Opis</Text>
+          <Text style={{ color: textColor }}>{order.opis ?? 'Brak'}</Text>
 
-      <Text style={[styles.label, { color: text }]}>Komentarze i oceny:</Text>
-      {comments.length === 0 && <Text style={{ color: text }}>Brak komentarzy.</Text>}
-      {comments.map((c) => (
-        <View key={c.id} style={[styles.commentBox, { borderColor: border }]}>
-          <Text style={[styles.commentAuthor, { color: text }]}>{c.author}</Text>
-          <Text style={{ color: text }}>{c.content}</Text>
-          {c.rating !== undefined && <Text style={{ color: text }}>Ocena: {c.rating}/5</Text>}
+          <Text style={[styles.label, { color: subText }]}>Status płatności</Text>
+          <Text style={{ color: textColor }}>{order.paymentStatus ?? 'Brak'}</Text>
+
+          <Text style={[styles.label, { color: subText }]}>Przypisany ochroniarz</Text>
+          <Text style={{ color: textColor }}>
+            {order.assignedGuardName ?? order.assignedGuard ?? 'Brak'}
+          </Text>
+
+          {order.lat && order.lng && (
+            <>
+              <Text style={[styles.label, { color: subText }]}>Lokalizacja</Text>
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: Number(order.lat),
+                  longitude: Number(order.lng),
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: Number(order.lat),
+                    longitude: Number(order.lng)
+                  }}
+                  title={order.name || 'Zlecenie'}
+                />
+              </MapView>
+            </>
+          )}
         </View>
-      ))}
-
-      <TextInput
-        placeholder="Dodaj komentarz..."
-        value={newComment}
-        onChangeText={setNewComment}
-        style={[styles.input, { borderColor: border, color: text }]}
-        placeholderTextColor={isDark ? '#999' : '#aaa'}
-      />
-      <TextInput
-        placeholder="Ocena (1–5)"
-        value={rating}
-        onChangeText={setRating}
-        keyboardType="numeric"
-        style={[styles.input, { borderColor: border, color: text }]}
-        placeholderTextColor={isDark ? '#999' : '#aaa'}
-      />
-      <Button title="Wyślij" onPress={handleAddComment} color={isDark ? '#2196F3' : undefined} />
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 40, paddingBottom: 16 },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  label: { marginTop: 10, fontWeight: 'bold' },
-  map: { width: '100%', height: 200, marginVertical: 10 },
-  input: {
-    borderWidth: 1,
-    padding: 8,
-    marginVertical: 6,
-    borderRadius: 4,
-  },
-  commentBox: {
-    padding: 10,
-    borderWidth: 1,
-    marginVertical: 4,
-    borderRadius: 4,
-  },
-  commentAuthor: { fontWeight: 'bold' },
-});
-
 export default ItemDetailsScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 12,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    padding: 16,
+    borderRadius: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 10,
+    textTransform: 'uppercase',
+  },
+  map: {
+    width: '100%',
+    height: 200,
+    marginTop: 10,
+    borderRadius: 8,
+  },
+});
