@@ -17,8 +17,12 @@ import {
   getOrders,
   getPaymentList,
   manualCreatePayment,
-  updateOrderStatus
+  updateOrderStatus,
+  getMyProfile,
+  getMyOrders
 } from '../../utils/api';
+import { useTheme } from '../ThemeContext/ThemeContext';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const formatDate = (isoString: string): string => {
@@ -37,17 +41,28 @@ const ListScreen: React.FC = () => {
   const [dataHistory, setDataHistory] = useState<any[]>([]);
   const pagerRef = useRef<PagerView>(null);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
- useEffect(() => {
+  useEffect(() => {
     fetchAll();
   }, []);
 
   const fetchAll = async () => {
     try {
-      const [orders, pays] = await Promise.all([
-        getOrders(),
-        getPaymentList(),
-      ]);
+      const profile = await getMyProfile();
+      const userId = profile.id;
+      const role = profile.role;
+      let orders: any[] = [];
+      if (role === 'admin') {
+        orders = await getOrders(userId, role);
+      } else if (role === 'user') {
+        orders = await getMyOrders(userId);
+      } else {
+        orders = await getOrders(userId, role);
+      }
+      const pays = await getPaymentList(userId, role);
+
       setPayments(pays);
       setDataActive(orders.filter((o: any) =>
         o.status !== 'zakończone' &&
@@ -64,7 +79,7 @@ const ListScreen: React.FC = () => {
 
   const handlePayment = async (orderId: string) => {
     try {
-      await manualCreatePayment(orderId); // NA RAZIE WARTOŚĆ NA SZTYWNO DO PODMIANY
+      await manualCreatePayment(orderId);
       await updateOrderStatus(orderId, 'w trakcie');
     } catch (e) {
       console.warn('Błąd płatności:', e);
@@ -75,48 +90,45 @@ const ListScreen: React.FC = () => {
   };
 
   const renderCard = ({ item }: { item: any }) => {
-    const payment     = payments.find(p => String(p.orderId) === String(item.id));
+    const payment = payments.find(p => String(p.orderId) === String(item.id));
     const isCompleted = payment?.status === 'completed';
-    const isPaid      = !!payment && !isCompleted;
     const isOrderPaid = item.status === 'Opłacono';
 
-    
     const cardStyle = [
       styles.card,
-      isOrderPaid && styles.cardPaidOrder
+      { backgroundColor: isOrderPaid ? (isDark ? '#665002' : '#FFA500') : (isDark ? '#232323' : '#fff') }
     ];
 
-    
     let btnStyle, btnText, onPress;
     if (isOrderPaid) {
-      btnStyle = styles.btnCompleted;
-      btnText  = 'Opłacono';
-      onPress  = () => navigation.navigate('Payment');
+      btnStyle = [styles.btnCompleted, { backgroundColor: isDark ? '#857602' : '#FFD700' }];
+      btnText = 'Opłacono';
+      onPress = () => navigation.navigate('Payment');
     } else if (!payment) {
-      btnStyle = styles.btnUnpaid;
-      btnText  = '💸 Opłać';
-      onPress  = () => handlePayment(item.id);
+      btnStyle = [styles.btnUnpaid, { backgroundColor: isDark ? '#388e3c' : '#4caf50' }];
+      btnText = '💸 Opłać';
+      onPress = () => handlePayment(item.id);
     } else if (isCompleted) {
-      btnStyle = styles.btnCompleted;
-      btnText  = 'Opłacono';
-      onPress  = () => navigation.navigate('Payment');
+      btnStyle = [styles.btnCompleted, { backgroundColor: isDark ? '#857602' : '#FFD700' }];
+      btnText = 'Opłacono';
+      onPress = () => navigation.navigate('Payment');
     } else {
-      btnStyle = styles.btnPaid;
-      btnText  = 'Przejdź do płatności';
-      onPress  = () => navigation.navigate('Payment');
+      btnStyle = [styles.btnPaid, { backgroundColor: isDark ? '#1976d2' : '#2196f3' }];
+      btnText = 'Przejdź do płatności';
+      onPress = () => navigation.navigate('Payment');
     }
 
     return (
       <TouchableOpacity
         style={cardStyle}
         activeOpacity={isOrderPaid ? 1 : 0.8}
-        onPress={() => navigation.navigate('Main')} // TU WSTAWIC PRZENIESIENIE DO EKRANU SZCZEGÓŁÓW
+        onPress={() => navigation.navigate('Main')}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.cardStatus}>{item.status}</Text>
+          <Text style={[styles.cardTitle, { color: isDark ? '#fff' : '#111' }]} numberOfLines={1}>{item.name}</Text>
+          <Text style={[styles.cardStatus, { color: isDark ? '#ffe082' : '#555' }]}>{item.status}</Text>
         </View>
-        <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+        <Text style={[styles.cardDate, { color: isDark ? '#aaa' : '#666' }]}>{formatDate(item.date)}</Text>
         <TouchableOpacity style={btnStyle} onPress={onPress} disabled={isOrderPaid}>
           <Text style={styles.btnText}>{btnText}</Text>
         </TouchableOpacity>
@@ -125,26 +137,30 @@ const ListScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.topBar}>
-        <Ionicons name="list-outline" size={24} color="#007AFF" />
-        <Text style={styles.topTitle}>Moje zlecenia</Text>
+    <SafeAreaView style={[
+      styles.container,
+      { backgroundColor: isDark ? '#191919' : '#f2f2f7' }
+    ]} edges={['top']}>
+      <View style={[
+        styles.topBar,
+        { backgroundColor: isDark ? '#232323' : '#ffffff' }
+      ]}>
+        <Ionicons name="list-outline" size={24} color={isDark ? '#82b1ff' : '#007AFF'} />
+        <Text style={[styles.topTitle, { color: isDark ? '#fff' : '#333' }]}>Moje zlecenia</Text>
         <Ionicons
           name="close"
           size={28}
-          color="#FF3B30"
+          color={isDark ? "#FF8888" : "#FF3B30"}
           onPress={() => navigation.navigate('Main')}
         />
       </View>
-
       <PagerView
         style={styles.pager}
         initialPage={0}
         ref={pagerRef}
       >
-        {/*Aktywne zlecenia*/}
         <View key="1" style={styles.page}>
-          <Text style={styles.pageTitle}>🔹 Aktywne</Text>
+          <Text style={[styles.pageTitle, { color: isDark ? "#fff" : "#222" }]}>🔹 Aktywne</Text>
           <FlatList
             data={dataActive}
             renderItem={renderCard}
@@ -153,10 +169,8 @@ const ListScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           />
         </View>
-
-        {/*historia zllecen */}
         <View key="2" style={styles.page}>
-          <Text style={styles.pageTitle}>🔸 Historia</Text>
+          <Text style={[styles.pageTitle, { color: isDark ? "#fff" : "#222" }]}>🔸 Historia</Text>
           <FlatList
             data={dataHistory}
             renderItem={renderCard}
@@ -166,13 +180,15 @@ const ListScreen: React.FC = () => {
           />
         </View>
       </PagerView>
-
-      <View style={styles.footer}>
+      <View style={[
+        styles.footer,
+        { backgroundColor: isDark ? '#232323' : '#fff', borderTopColor: isDark ? '#444' : '#e2e2e2' }
+      ]}>
         <TouchableOpacity onPress={() => pagerRef.current?.setPage(0)}>
-          <Text style={styles.footerText}>Aktywne</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#82b1ff' : '#007AFF' }]}>Aktywne</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => pagerRef.current?.setPage(1)}>
-          <Text style={styles.footerText}>Historia</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#82b1ff' : '#007AFF' }]}>Historia</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -182,35 +198,28 @@ const ListScreen: React.FC = () => {
 export default ListScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-
+  container: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#ffffff',
     elevation: 2,
   },
-  topTitle: { fontSize: 18, fontWeight: '600', color: '#333' },
-
+  topTitle: { fontSize: 18, fontWeight: '600' },
   pager: { flex: 1 },
-
   page: { flex: 1, paddingTop: 8 },
   pageTitle: {
     fontSize: 20,
     fontWeight: '700',
     marginHorizontal: 16,
     marginBottom: 8,
-    color: '#222',
   },
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -220,11 +229,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   cardPaidOrder: {
     backgroundColor: '#FFA500',
   },
-
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -234,37 +241,30 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#111',
   },
   cardStatus: {
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500',
-    color: '#555',
   },
   cardDate: {
     marginTop: 8,
     fontSize: 13,
-    color: '#666',
   },
-
   btnUnpaid: {
     marginTop: 12,
-    backgroundColor: '#4caf50',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
   },
   btnPaid: {
     marginTop: 12,
-    backgroundColor: '#2196f3',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
   },
   btnCompleted: {
     marginTop: 12,
-    backgroundColor: '#FFD700',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
@@ -273,18 +273,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#fff',
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e2e2e2',
   },
   footerText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#007AFF',
   },
 });

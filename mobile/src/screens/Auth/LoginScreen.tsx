@@ -126,47 +126,58 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleLogin = async () => {
-    setErrors({
-      email: false,
-      password: false
-    });
+  setErrors({
+    email: false,
+    password: false
+  });
 
-    let hasErrors = false;
+  let hasErrors = false;
 
-    if (!email) {
-      setErrors(prev => ({ ...prev, email: true }));
-      hasErrors = true;
-    }
+  if (!email) {
+    setErrors(prev => ({ ...prev, email: true }));
+    hasErrors = true;
+  }
 
-    if (!password) {
-      setErrors(prev => ({ ...prev, password: true }));
-      hasErrors = true;
-    }
+  if (!password) {
+    setErrors(prev => ({ ...prev, password: true }));
+    hasErrors = true;
+  }
 
-    if (hasErrors) {
-      showModal('Błąd', 'Proszę wypełnić wszystkie pola', 'error');
+  if (hasErrors) {
+    showModal('Błąd', 'Proszę wypełnić wszystkie pola', 'error');
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    const response = await login(email, password);
+
+    if (!response.success || !response.token) {
+      showModal('Błąd', 'Nieprawidłowy email lub hasło', 'error');
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await login(email, password);
-      
-      if (!response.success || !response.token) {
-        showModal('Błąd', 'Nieprawidłowy email lub hasło', 'error');
-        setIsLoading(false);
-        return;
-      }
+    await setToken(response.token);
 
-      await setToken(response.token); 
-      showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
-    } catch (error) {
-      console.error('Błąd podczas logowania:', error);
-      showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Sprawdź połączenie z internetem.', 'error');
-    } finally {
-      setIsLoading(false);
+    try {
+      const jwtDecode = require('jwt-decode');
+      const decoded: { userId?: number, role?: string } = jwtDecode(response.token);
+      if (decoded.userId && decoded.role) {
+        await AsyncStorage.setItem('userId', decoded.userId.toString());
+        await AsyncStorage.setItem('role', decoded.role);
+      }
+    } catch (e) {
     }
-  };
+
+    showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
+  } catch (error) {
+    console.error('Błąd podczas logowania:', error);
+    showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Sprawdź połączenie z internetem.', 'error');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
       <ImageBackground source={BackgroundImage} style={styles.background} resizeMode="cover">

@@ -9,7 +9,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import { useTheme } from '../ThemeContext/ThemeContext';
-import { getOrders } from '../../utils/api';
+import { getOrders, getMyProfile } from '../../utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
@@ -23,7 +23,15 @@ const OrderHistoryScreen: React.FC = () => {
   const fetchCompletedOrders = async () => {
     setLoading(true);
     try {
-      const allOrders = await getOrders();
+      // POBIERZ DANE O UŻYTKOWNIKU
+      const profile = await getMyProfile();
+      const userId = profile.id;
+      const role = profile.role;
+
+      // POBIERZ ZLECENIA Z BACKENDU Z UWZGLĘDNIENIEM ROLI
+      const allOrders = await getOrders(userId, role);
+
+      // FILTRUJEMY TYLKO ZAKOŃCZONE
       const completed = Array.isArray(allOrders)
         ? allOrders.filter(o => o.status === 'zakończone')
         : [];

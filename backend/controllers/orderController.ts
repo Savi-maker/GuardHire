@@ -2,10 +2,45 @@ import { db } from '../db';
 import { Request, Response } from 'express';
 
 export const getOrders = (req: Request, res: Response) => {
-  db.all('SELECT * FROM orders', [], (err, rows) => {
+  const userId = Number(req.query.userId);
+  const role = req.query.role;
+
+  let query = 'SELECT * FROM orders';
+  let params: any[] = [];
+
+  if (role === 'guard' && userId) {
+    query += ' WHERE assignedGuard = ?';
+    params = [userId];
+  } else if (role === 'user' && userId) {
+    query += ' WHERE createdBy = ?';
+    params = [userId];
+  } // admin widzi wszystko
+
+  db.all(query, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
+};
+
+
+export const getMyOrders = (req: Request, res: Response) => {
+  const userId = Number(req.query.userId);
+  if (!userId) {
+    res.status(400).json({ error: 'Brak userId w zapytaniu' });
+    return;
+  }
+
+  db.all(
+    'SELECT * FROM orders WHERE createdBy = ?',
+    [userId],
+    (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json(rows);
+    }
+  );
 };
 
 export const addOrder = (req: Request, res: Response) => {

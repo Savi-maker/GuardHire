@@ -87,41 +87,56 @@ export const listPayments: RequestHandler = (req, res) => {
   }
 
   if (role === 'admin') {
-    db.all(
-      `SELECT payments.*, orders.name as orderName 
-       FROM payments 
-       LEFT JOIN orders ON payments.orderId = orders.id 
-       ORDER BY payments.createdAt DESC`,
-      [],
-      (err, rows) => {
-        if (err) {
-          console.error('Błąd przy pobieraniu payments:', err.message);
-          res.status(500).json({ error: 'Błąd serwera' });
-          return;
-        }
-        res.json(rows);
+  // wszystko
+  db.all(
+    `SELECT payments.*, orders.name as orderName 
+     FROM payments 
+     LEFT JOIN orders ON payments.orderId = orders.id 
+     ORDER BY payments.createdAt DESC`,
+    [],
+    (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: 'Błąd serwera' });
+        return;
       }
-    );
-  } else if (role === 'guard') {
-    db.all(
-      `SELECT payments.*, orders.name as orderName 
-       FROM payments 
-       LEFT JOIN orders ON payments.orderId = orders.id 
-       WHERE orders.assignedGuard = ? 
-       ORDER BY payments.createdAt DESC`,
-      [userId],
-      (err, rows) => {
-        if (err) {
-          console.error('Błąd przy pobieraniu payments:', err.message);
-          res.status(500).json({ error: 'Błąd serwera' });
-          return;
-        }
-        res.json(rows);
+      res.json(rows);
+    }
+  );
+} else if (role === 'guard') {
+  db.all(
+    `SELECT payments.*, orders.name as orderName 
+     FROM payments 
+     LEFT JOIN orders ON payments.orderId = orders.id 
+     WHERE orders.assignedGuard = ? 
+     ORDER BY payments.createdAt DESC`,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: 'Błąd serwera' });
+        return;
       }
-    );
-  } else {
-    res.status(403).json({ error: 'Brak uprawnień' });
-  }
+      res.json(rows);
+    }
+  );
+} else if (role === 'user') {
+  db.all(
+    `SELECT payments.*, orders.name as orderName 
+     FROM payments 
+     LEFT JOIN orders ON payments.orderId = orders.id 
+     WHERE orders.createdBy = ? 
+     ORDER BY payments.createdAt DESC`,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: 'Błąd serwera' });
+        return;
+      }
+      res.json(rows);
+    }
+  );
+} else {
+  res.status(403).json({ error: 'Brak uprawnień' });
+}
 };
 
 

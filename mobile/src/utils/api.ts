@@ -317,8 +317,13 @@ export async function markNotificationAsRead(id: number) {
 // ---------- ZLECENIA ----------
 
 // Pobierz wszystkie zlecenia
-export async function getOrders() {
-  const res = await fetch(`${API_URL}/orders`);
+export async function getOrders(userId?: number, role?: string) {
+  let url = `${API_URL}/orders`;
+  if (userId && role) {
+    url += `?userId=${userId}&role=${role}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
   return res.json();
 }
 
@@ -414,20 +419,23 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
   return res.json();
 }
 
+export async function getMyOrders(userId: number) {
+  const res = await fetch(`${API_URL}/orders/my?userId=${userId}`);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
 // ---------- WPŁATY ----------
 
 // Lista wpłat
-export async function getPaymentList(userId?: number, role?: string): Promise<any[]> {
+export async function getPaymentList(userId?: number, role?: string) {
   let url = `${API_URL}/payment/list`;
   if (userId && role) {
     url += `?userId=${userId}&role=${role}`;
   }
   const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP error! status: ${res.status}`);
-  }
-  const data = await res.json();
-  return data;
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return res.json();
 }
 
 // Tworzenie płatności

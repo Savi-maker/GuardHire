@@ -7,7 +7,6 @@ import {
   FlatList,
   Alert,
   Linking,
-  Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
@@ -21,6 +20,7 @@ import {
   getMyProfile,
   confirmPayment
 } from '../../utils/api';
+import { useTheme } from '../ThemeContext/ThemeContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
 
@@ -35,6 +35,8 @@ type PaymentItem = {
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const pagerRef = useRef<PagerView>(null);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [zaleglosci, setZaleglosci] = useState<PaymentItem[]>([]);
   const [historia, setHistoria] = useState<PaymentItem[]>([]);
@@ -46,28 +48,24 @@ const PaymentScreen: React.FC = () => {
   }, [navigation]);
 
   useEffect(() => {
-  (async () => {
-    try {
-      const profile = await getMyProfile();
-      setIsAdmin(profile.role === 'admin');
-      setUserId(profile.id);
-
-      const data = await getPaymentList(profile.id, profile.role);
-      setZaleglosci(data.filter(i => i.status === 'pending'));
-      setHistoria(data.filter(i => i.status !== 'pending'));
-    } catch (err) {
-      console.error('Błąd ładowania płatności:', err);
-      Alert.alert('Błąd', 'Nie udało się pobrać danych płatności');
-    }
-  })();
-}, []);
+    (async () => {
+      try {
+        const profile = await getMyProfile();
+        setIsAdmin(profile.role === 'admin');
+        setUserId(profile.id);
+        const data = await getPaymentList(profile.id, profile.role);
+        setZaleglosci(data.filter((item: PaymentItem) => item.status === 'pending'));
+        setHistoria(data.filter((item: PaymentItem) => item.status !== 'pending'));
+      } catch (err) {
+        Alert.alert('Błąd', 'Nie udało się pobrać danych płatności');
+      }
+    })();
+  }, []);
 
   const handleOplac = async (id: string, amount: number) => {
     try {
       const response = await payPayment(id, 'janek@guardhire.pl');
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Błąd odpowiedzi:', response.status, text);
         Alert.alert('Błąd', 'Nie udało się utworzyć płatności');
         return;
       }
@@ -79,8 +77,7 @@ const PaymentScreen: React.FC = () => {
       } else {
         Alert.alert('Błąd', 'Brak redirectUri w odpowiedzi serwera');
       }
-    } catch (err) {
-      console.error('Błąd płatności:', err);
+    } catch {
       Alert.alert('Błąd połączenia', 'Spróbuj ponownie później');
     }
   };
@@ -89,9 +86,10 @@ const PaymentScreen: React.FC = () => {
     const res = await confirmPayment(id);
     if (res.success) {
       Alert.alert('Sukces', 'Płatność zatwierdzona');
-      const data = await getPaymentList();
-      setZaleglosci(data.filter(i => i.status === 'pending'));
-      setHistoria(data.filter(i => i.status !== 'pending'));
+      const profile = await getMyProfile();
+      const data = await getPaymentList(profile.id, profile.role);
+      setZaleglosci(data.filter((item: PaymentItem) => item.status === 'pending'));
+      setHistoria(data.filter((item: PaymentItem) => item.status !== 'pending'));
     } else {
       Alert.alert('Błąd', res.error || 'Nie udało się zatwierdzić');
     }
@@ -115,35 +113,48 @@ const PaymentScreen: React.FC = () => {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[
+          styles.card,
+          { backgroundColor: isDark ? '#232323' : '#fff' }
+        ]}
         activeOpacity={0.8}
         onPress={() => navigation.navigate('ItemDetails', { orderId: Number(item.id) })}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
+          <Text style={[
+            styles.cardTitle,
+            { color: isDark ? '#fff' : '#111' }
+          ]} numberOfLines={1}>
             {item.orderName}
           </Text>
-          <Text style={styles.cardStatus}>
+          <Text style={[
+            styles.cardStatus,
+            { color: isDark ? '#e7c24f' : '#555' }
+          ]}>
             {isPending
               ? 'Oczekuje'
               : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
           </Text>
         </View>
-
-        <Text style={styles.cardAmount}>{item.amount.toFixed(2)} PLN</Text>
-        <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
-
+        <Text style={[
+          styles.cardAmount,
+          { color: isDark ? '#fff' : '#333' }
+        ]}>{item.amount.toFixed(2)} PLN</Text>
+        <Text style={[
+          styles.cardDate,
+          { color: isDark ? '#aaa' : '#666' }
+        ]}>{formatDate(item.createdAt)}</Text>
         {isPending ? (
           <>
             <TouchableOpacity
-              style={styles.btnUnpaid}
+              style={[styles.btnUnpaid, { backgroundColor: isDark ? '#388e3c' : '#4caf50' }]}
               onPress={() => handleOplac(item.id, item.amount)}
             >
               <Text style={styles.btnText}>💸 Opłać</Text>
             </TouchableOpacity>
             {isAdmin && (
               <TouchableOpacity
-                style={styles.btnTechConfirm}
+                style={[styles.btnTechConfirm, { backgroundColor: isDark ? '#2196f3' : '#007AFF' }]}
                 onPress={() => handleZatwierdz(item.id)}
               >
                 <Text style={styles.btnText}>[TECH] Zatwierdź</Text>
@@ -151,7 +162,7 @@ const PaymentScreen: React.FC = () => {
             )}
           </>
         ) : (
-          <View style={styles.btnCompletedNonClickable}>
+          <View style={[styles.btnCompletedNonClickable, { backgroundColor: isDark ? '#857602' : '#FFD700' }]}>
             <Text style={styles.btnText}>Opłacono</Text>
           </View>
         )}
@@ -160,44 +171,60 @@ const PaymentScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
+    <SafeAreaView style={[
+      styles.container,
+      { backgroundColor: isDark ? '#191919' : '#f2f2f7' }
+    ]}>
+      <View style={[
+        styles.topBar,
+        { backgroundColor: isDark ? '#232323' : '#fff' }
+      ]}>
         <TouchableOpacity onPress={() => navigation.navigate('Main')}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color={isDark ? "#9fcaff" : "#007AFF"} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Płatności</Text>
+        <Text style={[
+          styles.topTitle,
+          { color: isDark ? "#fff" : "#333" }
+        ]}>Płatności</Text>
         <View style={{ width: 24 }} />
       </View>
-
       <PagerView style={styles.pager} initialPage={0} ref={pagerRef}>
         <View key="0" style={styles.page}>
-          <Text style={styles.pageTitle}>🕓 Zaległości</Text>
+          <Text style={[
+            styles.pageTitle,
+            { color: isDark ? "#fff" : "#222" }
+          ]}>🕓 Zaległości</Text>
           <FlatList
             data={zaleglosci}
-            keyExtractor={i => i.id}
+            keyExtractor={(i: PaymentItem) => i.id}
             renderItem={({ item }) => renderCard(item, 'zaleglosci')}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
         </View>
         <View key="1" style={styles.page}>
-          <Text style={styles.pageTitle}>✅ Historia</Text>
+          <Text style={[
+            styles.pageTitle,
+            { color: isDark ? "#fff" : "#222" }
+          ]}>✅ Historia</Text>
           <FlatList
             data={historia}
-            keyExtractor={i => i.id}
+            keyExtractor={(i: PaymentItem) => i.id}
             renderItem={({ item }) => renderCard(item, 'historia')}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
         </View>
       </PagerView>
-
-      <View style={styles.footer}>
+      <View style={[
+        styles.footer,
+        { backgroundColor: isDark ? '#232323' : '#fff', borderTopColor: isDark ? '#444' : '#e2e2e2' }
+      ]}>
         <TouchableOpacity onPress={() => pagerRef.current?.setPage(0)}>
-          <Text style={styles.footerText}>Zaległości</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#9fcaff' : '#007AFF' }]}>Zaległości</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => pagerRef.current?.setPage(1)}>
-          <Text style={styles.footerText}>Historia</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#9fcaff' : '#007AFF' }]}>Historia</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -207,18 +234,15 @@ const PaymentScreen: React.FC = () => {
 export default PaymentScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-
+  container: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#fff',
     elevation: 2,
   },
-  topTitle: { fontSize: 18, fontWeight: '600', color: '#333' },
-
+  topTitle: { fontSize: 18, fontWeight: '600' },
   pager: { flex: 1 },
   page: { flex: 1, paddingTop: 8 },
   pageTitle: {
@@ -226,12 +250,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginHorizontal: 16,
     marginBottom: 8,
-    color: '#222',
   },
   listContainer: { paddingHorizontal: 16, paddingBottom: 16 },
-
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -245,41 +266,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  cardTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111' },
-  cardStatus: { fontSize: 14, fontWeight: '500', color: '#555' },
-  cardAmount: { marginTop: 8, fontSize: 15, fontWeight: '500', color: '#333' },
-  cardDate: { marginTop: 4, fontSize: 13, color: '#666' },
-
+  cardTitle: { flex: 1, fontSize: 16, fontWeight: '600' },
+  cardStatus: { fontSize: 14, fontWeight: '500' },
+  cardAmount: { marginTop: 8, fontSize: 15, fontWeight: '500' },
+  cardDate: { marginTop: 4, fontSize: 13 },
   btnUnpaid: {
     marginTop: 12,
-    backgroundColor: '#4caf50',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
   },
   btnCompletedNonClickable: {
     marginTop: 12,
-    backgroundColor: '#FFD700',
     paddingVertical: 12,
     borderRadius: 6,
     alignItems: 'center',
   },
   btnTechConfirm: {
     marginTop: 8,
-    backgroundColor: '#007AFF',
     paddingVertical: 6,
     borderRadius: 6,
     alignItems: 'center',
   },
   btnText: { color: '#fff', fontWeight: '600' },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#fff',
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e2e2e2',
   },
-  footerText: { fontSize: 16, fontWeight: '500', color: '#007AFF' },
+  footerText: { fontSize: 16, fontWeight: '500' },
 });

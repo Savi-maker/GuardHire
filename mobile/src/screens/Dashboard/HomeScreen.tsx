@@ -105,12 +105,11 @@ const HomeScreen: React.FC = () => {
     { id: '2', title: 'Historia', route: 'OrderHistory' },
     { id: '3', title: 'Profil', route: 'UserProfile' },
     { id: '4', title: 'Powiadomienia', route: 'Notifications' },
-    { id: '10', title: 'Formularz', route: 'Form' },
+    { id: '10', title: 'Dodaj zlecenie', route: 'Form' },
     { id: '11', title: 'Płatność', route: 'Payment' },
    // { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
    // { id: '13', title: 'Sukces', route: 'Success' },
-    { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
-    { id: '16', title: 'Szczegóły(testy)', route: 'ItemDetails' },
+   // { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
     { id: '17', title: 'Twoja lokalizacja', route: 'CurrentLocation' },
 
     ...(userRole === 'guard' || userRole === 'admin' ? [

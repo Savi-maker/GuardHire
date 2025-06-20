@@ -6,7 +6,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigation } from '@react-navigation/native';
 import MapView, { Marker, MapPressEvent } from 'react-native-maps';
-import { addOrder, API_URL } from '../../utils/api';
+import { addOrder, API_URL,getMyProfile } from '../../utils/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../ThemeContext/ThemeContext';
 
@@ -60,9 +60,10 @@ const FormScreen: React.FC = () => {
 
     setLoading(true);
     try {
+      const profile = await getMyProfile();
       const response = await addOrder(
         data.name, 'nowe', new Date().toISOString(),
-        data.opis, marker.lat, marker.lng, 1, selectedGuard.id
+        data.opis, marker.lat, marker.lng, profile.id, selectedGuard.id
       );
 
       if (response && response.success) {

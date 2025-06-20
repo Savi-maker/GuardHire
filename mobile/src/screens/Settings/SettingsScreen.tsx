@@ -3,6 +3,9 @@ import { View, Text, Switch, StyleSheet, SafeAreaView, TouchableOpacity, Platfor
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../ThemeContext/ThemeContext';
 import { LightSensor } from 'expo-sensors';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/types';
 
 const SETTINGS_KEY = 'app_settings';
 
@@ -27,6 +30,7 @@ const SettingsScreen = () => {
   const [settings, setSettings] = useState(defaultSettings);
   const { theme, setTheme } = useTheme();
   const [lightLevel, setLightLevel] = useState<number | null>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Załaduj ustawienia
   useEffect(() => {
@@ -144,6 +148,17 @@ const SettingsScreen = () => {
         <Text style={[styles.label, { color: textColor, marginBottom: 6 }]}>Język</Text>
         {renderSegment(LANGUAGES, settings.language, changeLanguage)}
       </View>
+
+      <TouchableOpacity
+        style={[
+          styles.supportBtn,
+          { backgroundColor: theme === 'dark' ? '#1976d2' : '#4A90E2' }
+        ]}
+        onPress={() => navigation.navigate('HelpSupport')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.supportBtnText}>Wsparcie / Pomoc</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -195,7 +210,25 @@ const styles = StyleSheet.create({
     color: '#777',
     marginTop: 7,
     marginLeft: 2,
-  }
+  },
+  supportBtn: {
+    marginTop: 10,
+    marginBottom: 30,
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  supportBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 17,
+    letterSpacing: 0.5,
+  },
 });
 
 export default SettingsScreen;

@@ -6,12 +6,14 @@ import {
   updateOrder,
   deleteOrder,
   updateOrderStatus,
-  getGuards
+  getGuards,
+  getMyOrders
 } from '../controllers/orderController';
 
 const router = express.Router();
 
 router.get('/', getOrders);
+router.get('/my', getMyOrders);
 router.post('/', addOrder);
 router.get('/:id', getOrderById);
 router.put('/:id', updateOrder);
