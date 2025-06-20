@@ -9,18 +9,32 @@ export const getOrders = (req: Request, res: Response) => {
 };
 
 export const addOrder = (req: Request, res: Response) => {
-  const { name, status, date, opis, lat, lng, paymentStatus } = req.body;
-console.log('BODY:', req.body);
+  const { name, status, date, opis, lat, lng, paymentStatus, createdBy, assignedGuard } = req.body;
+  
   db.run(
-    `INSERT INTO orders (name, status, date, opis, lat, lng, paymentStatus)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [name, status, date, opis, lat, lng, paymentStatus || 'unpaid'],
+    `INSERT INTO orders (name, status, date, opis, lat, lng, paymentStatus, createdBy, assignedGuard)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, status, date, opis, lat, lng, paymentStatus || 'unpaid', createdBy, assignedGuard],
     function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, name, status, date, opis, lat, lng, paymentStatus: paymentStatus || 'unpaid' });
+      if (err) {
+        console.error('SQL Błąd:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+      res.json({
+        success: true,
+        id: this.lastID,
+        name,
+        status,
+        date,
+        opis,
+        lat,
+        lng,
+        paymentStatus: paymentStatus || 'unpaid',
+        createdBy,
+        assignedGuard
+      });
     }
   );
-  console.log("BODY:", req.body);
 };
 
 
@@ -68,5 +82,11 @@ export const updateOrderStatus = (req: Request, res: Response): void => {
     if (err) return res.status(500).json({ error: err.message });
     if (this.changes === 0) return res.status(404).json({ error: 'Nie znaleziono zlecenia' });
     res.json({ success: true });
+  });
+};
+export const getGuards = (req: Request, res: Response) => {
+  db.all('SELECT id, imie, nazwisko, username FROM profiles WHERE role = ?', ['guard'], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
   });
 };

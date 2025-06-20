@@ -107,8 +107,8 @@ const HomeScreen: React.FC = () => {
     { id: '4', title: 'Powiadomienia', route: 'Notifications' },
     { id: '10', title: 'Formularz', route: 'Form' },
     { id: '11', title: 'Płatność', route: 'Payment' },
-    { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
-    { id: '13', title: 'Sukces', route: 'Success' },
+   // { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
+   // { id: '13', title: 'Sukces', route: 'Success' },
     { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
     { id: '16', title: 'Szczegóły(testy)', route: 'ItemDetails' },
     { id: '17', title: 'Twoja lokalizacja', route: 'CurrentLocation' },
@@ -256,9 +256,10 @@ const HomeScreen: React.FC = () => {
                   style={styles.menuItem}
                   onPress={() => {
                     setMenuVisible(false);
-                    if (item.onPress) {
-                      item.onPress(); // 🔥 globalny error
-                    } else if (item.route) {
+                    // if (item.onPress) {
+                    //   item.onPress(); // 🔥 globalny error
+                    // } else 
+                    if (item.route) {
                       navigation.navigate(item.route as any);
                     }
                   }}

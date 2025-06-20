@@ -158,7 +158,7 @@ const LoginScreen: React.FC = () => {
         return;
       }
 
-      await setToken(response.token); // token jest teraz na pewno zdefiniowany
+      await setToken(response.token); 
       showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
     } catch (error) {
       console.error('Błąd podczas logowania:', error);

@@ -34,8 +34,8 @@ export async function createPayment(amount: string, email: string) {
  const nettoZloty = parseFloat(amount);          
   const grosze     = Math.round(nettoZloty * 100) 
   const payload = {
-    notifyUrl: "http://192.168.0.19:3000/payment/notify",
-    continueUrl: `http://192.168.0.19:3000/payment/confirmed?extOrderId=${extOrderId}`,
+    notifyUrl: "http://192.168.1.111:3000/payment/notify",
+    continueUrl: `http://192.168.1.111:3000/payment/confirmed?extOrderId=${extOrderId}`,
     customerIp: "127.0.0.1",
     merchantPosId: POS_ID,
     description: "Opłata za usługę GuardHire",

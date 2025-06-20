@@ -56,8 +56,9 @@ db.serialize(() => {
     opis TEXT,
     lat REAL,
     lng REAL,
-    paymentStatus TEXT DEFAULT 'unpaid'
-  
+    paymentStatus TEXT DEFAULT 'unpaid',
+    createdBy INTEGER,
+    assignedGuard INTEGER
   )
 `);
 
