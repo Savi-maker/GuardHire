@@ -32,49 +32,35 @@ type PaymentItem = {
   createdAt: string;
 };
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const formatDate = (isoString: string): string => {
-  const date = new Date(isoString);
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const MM = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${hh}:${mm}  ${dd}.${MM}.${yyyy}`;
-};
-
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const pagerRef = useRef<PagerView>(null);
 
   const [zaleglosci, setZaleglosci] = useState<PaymentItem[]>([]);
   const [historia, setHistoria] = useState<PaymentItem[]>([]);
-  const [isAdmin, setIsAdmin] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const profile = await getMyProfile();
-        setIsAdmin(profile.role === 'admin');
-      } catch {
-        setIsAdmin(false);
-      }
+  (async () => {
+    try {
+      const profile = await getMyProfile();
+      setIsAdmin(profile.role === 'admin');
+      setUserId(profile.id);
 
-      try {
-        const data = await getPaymentList();
-        setZaleglosci(data.filter(i => i.status === 'pending'));
-        setHistoria(data.filter(i => i.status !== 'pending'));
-      } catch (err) {
-        console.error('Błąd ładowania płatności:', err);
-        Alert.alert('Błąd', 'Nie udało się pobrać danych płatności');
-      }
-    })();
-  }, []);
+      const data = await getPaymentList(profile.id, profile.role);
+      setZaleglosci(data.filter(i => i.status === 'pending'));
+      setHistoria(data.filter(i => i.status !== 'pending'));
+    } catch (err) {
+      console.error('Błąd ładowania płatności:', err);
+      Alert.alert('Błąd', 'Nie udało się pobrać danych płatności');
+    }
+  })();
+}, []);
 
   const handleOplac = async (id: string, amount: number) => {
     try {
@@ -111,6 +97,16 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
+  const formatDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const MM = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${hh}:${mm}  ${dd}.${MM}.${yyyy}`;
+  };
+
   const renderCard = (
     item: PaymentItem,
     pageType: 'zaleglosci' | 'historia'
@@ -118,7 +114,11 @@ const PaymentScreen: React.FC = () => {
     const isPending = pageType === 'zaleglosci';
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('ItemDetails', { orderId: Number(item.id) })}
+      >
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle} numberOfLines={1}>
             {item.orderName}
@@ -155,7 +155,7 @@ const PaymentScreen: React.FC = () => {
             <Text style={styles.btnText}>Opłacono</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 

@@ -26,6 +26,7 @@ import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AdminPanelScreen from './src/screens/Admin/AdminPanelScreen';
 import CurrentLocationScreen from './src/screens/Location/CurrentLocationScreen';
+import AssignedOrdersScreen from './src/screens/AssignedOrders/AssignedOrdersScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -51,6 +52,7 @@ export default function App() {
           <Stack.Screen name="Payment" component={PaymentScreen} options={{headerShown: true}} />
           <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} options={{headerShown: true}} />
           <Stack.Screen name="Success" component={SuccessScreen} />
+          <Stack.Screen name="AssignedOrders" component={AssignedOrdersScreen} />
           <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />

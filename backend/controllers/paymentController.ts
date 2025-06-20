@@ -1,12 +1,10 @@
 import { RequestHandler } from 'express';
 import { db } from '../db';
 import { createPayment } from '../services/payu';
-import { Request,Response,Router } from 'express';
+import { Request, Response, Router } from 'express';
 
-//DO WERYFIKACJI
-export const manualPaymentCreate: RequestHandler = (req: Request, res: Response): void => {
-  const { orderId} = req.body;
-
+export const manualPaymentCreate: RequestHandler = (req, res) => {
+  const { orderId } = req.body;
   if (!orderId) {
     res.status(400).json({ error: 'Brakuje danych' });
     return;
@@ -18,16 +16,13 @@ export const manualPaymentCreate: RequestHandler = (req: Request, res: Response)
     function (err) {
       if (err) {
         console.error('Błąd insertu payments:', err.message);
-        return res.status(500).json({ error: 'Błąd serwera' });
+        res.status(500).json({ error: 'Błąd serwera' });
+        return;
       }
       res.json({ success: true, paymentId: this.lastID });
     }
   );
 };
-
-
-
-
 
 export const handlePayment: RequestHandler = (req, res) => {
   const { paymentId, email } = req.body;
@@ -36,68 +31,98 @@ export const handlePayment: RequestHandler = (req, res) => {
     return;
   }
 
-  db.get(
-    'SELECT amount FROM payments WHERE id = ?',
-    [paymentId],
-    async (err, row: { amount: number } | undefined) => {
-      if (err) {
-        console.error('Błąd bazy danych:', err.message);
-        return res.status(500).json({ error: 'Błąd serwera przy odczycie' });
-      }
-      if (!row) {
-        return res.status(404).json({ error: 'Nie znaleziono płatności' });
-      }
-
-      const amount = row.amount;
-      try {
-        const { payuOrderId, redirectUri, extOrderId } = await createPayment(String(amount), email);
-
-        db.run(
-          'UPDATE payments SET payuOrderId = ?, extOrderId = ?, updatedAt = datetime("now") WHERE id = ?',
-          [payuOrderId, extOrderId, paymentId],
-          (err2) => {
-            if (err2) {
-              console.error('Błąd aktualizacji płatności:', err2.message);
-              return res.status(500).json({ error: 'Błąd zapisu danych PayU' });
-            }
-            return res.json({ redirectUri });
-          }
-        );
-      } catch (e: any) {
-        console.error('Błąd przy tworzeniu płatności:', e);
-        return res.status(500).json({ error: 'Błąd płatności' });
-      }
+  db.get('SELECT amount FROM payments WHERE id = ?', [paymentId], async (err, row: { amount: number } | undefined) => {
+    if (err) {
+      console.error('Błąd bazy danych:', err.message);
+      res.status(500).json({ error: 'Błąd serwera przy odczycie' });
+      return;
     }
-  );
-};
+    if (!row) {
+      res.status(404).json({ error: 'Nie znaleziono płatności' });
+      return;
+    }
 
+    try {
+      const { payuOrderId, redirectUri, extOrderId } = await createPayment(String(row.amount), email);
+      db.run(
+        'UPDATE payments SET payuOrderId = ?, extOrderId = ?, updatedAt = datetime("now") WHERE id = ?',
+        [payuOrderId, extOrderId, paymentId],
+        (err2) => {
+          if (err2) {
+            console.error('Błąd aktualizacji płatności:', err2.message);
+            res.status(500).json({ error: 'Błąd zapisu danych PayU' });
+            return;
+          }
+          res.json({ redirectUri });
+        }
+      );
+    } catch (e) {
+      console.error('Błąd przy tworzeniu płatności:', e);
+      res.status(500).json({ error: 'Błąd płatności' });
+    }
+  });
+};
 
 export const payuNotifyHandler: RequestHandler = (req, res) => {
   const { orderId, status } = req.body;
-
   db.run(
     "UPDATE payments SET status = ?, updatedAt = datetime('now') WHERE payuOrderId = ?",
     [status, orderId],
     (err) => {
-      if (err) console.error("Błąd webhooka PayU:", err.message);
+      if (err) {
+        console.error("Błąd webhooka PayU:", err.message);
+      }
     }
   );
-
   res.send("OK");
 };
-const router = Router();
 
 export const listPayments: RequestHandler = (req, res) => {
-  db.all('SELECT payments.*, orders.name as orderName FROM payments left join orders on payments.orderId = orders.id ORDER BY payments.createdAt DESC', [], (err, rows) => {
-    if (err) {
-      console.error('Błąd przy pobieraniu payments:', err.message);
-      return res.status(500).json({ error: 'Błąd serwera' });
-    }
-    res.json(rows);
-  });
-};
+  const userId = Number(req.query.userId);
+  const role = req.query.role as string;
 
-export default router;
+  if (!userId || !role) {
+    res.status(400).json({ error: 'Brak danych użytkownika' });
+    return;
+  }
+
+  if (role === 'admin') {
+    db.all(
+      `SELECT payments.*, orders.name as orderName 
+       FROM payments 
+       LEFT JOIN orders ON payments.orderId = orders.id 
+       ORDER BY payments.createdAt DESC`,
+      [],
+      (err, rows) => {
+        if (err) {
+          console.error('Błąd przy pobieraniu payments:', err.message);
+          res.status(500).json({ error: 'Błąd serwera' });
+          return;
+        }
+        res.json(rows);
+      }
+    );
+  } else if (role === 'guard') {
+    db.all(
+      `SELECT payments.*, orders.name as orderName 
+       FROM payments 
+       LEFT JOIN orders ON payments.orderId = orders.id 
+       WHERE orders.assignedGuard = ? 
+       ORDER BY payments.createdAt DESC`,
+      [userId],
+      (err, rows) => {
+        if (err) {
+          console.error('Błąd przy pobieraniu payments:', err.message);
+          res.status(500).json({ error: 'Błąd serwera' });
+          return;
+        }
+        res.json(rows);
+      }
+    );
+  } else {
+    res.status(403).json({ error: 'Brak uprawnień' });
+  }
+};
 
 
 
@@ -105,91 +130,69 @@ export const deleteAllPayments: RequestHandler = (req, res) => {
   db.run('DELETE FROM payments', (err) => {
     if (err) {
       console.error('Błąd przy czyszczeniu payments:', err.message);
-      return res.status(500).json({ error: 'Błąd serwera' });
+      res.status(500).json({ error: 'Błąd serwera' });
+      return;
     }
     res.json({ success: true });
   });
 };
+
 export const updatePaymentStatus = (extOrderId: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    //znajdz orderid po extorderid
-    db.get(
-      'SELECT orderId FROM payments WHERE extOrderId = ?',
-      [extOrderId],
-      (err, row: { orderId: number } | undefined) => {
-        if (err) return reject(err);
-        if (!row) return reject(new Error(`Nie znaleziono płatności dla extOrderId=${extOrderId}`));
+    db.get('SELECT orderId FROM payments WHERE extOrderId = ?', [extOrderId], (err, row: { orderId: number } | undefined) => {
+      if (err) return reject(err);
+      if (!row) return reject(new Error(`Nie znaleziono płatności dla extOrderId=${extOrderId}`));
 
-        const orderId = row.orderId;
+      const orderId = row.orderId;
+      db.run(
+        "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE extOrderId = ?",
+        [extOrderId],
+        (err2) => {
+          if (err2) return reject(err2);
 
-        // aktualizuj wpalte
-        db.run(
-          "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE extOrderId = ?",
-          [extOrderId],
-          (err2) => {
-            if (err2) return reject(err2);
-
-            //Aktualizuj status zlecenia
-            db.run(
-              "UPDATE orders SET status = ? WHERE id = ?",
-              ['Opłacono', orderId],
-              (err3) => {
-                if (err3) return reject(err3);
-                // jest ok
-                resolve();
-              }
-            );
-          }
-        );
-      }
-    );
+          db.run(
+            "UPDATE orders SET paymentStatus = 'opłacono', status = 'w trakcie' WHERE id = ?",
+            [orderId],
+            (err3) => {
+              if (err3) return reject(err3);
+              resolve();
+            }
+          );
+        }
+      );
+    });
   });
 };
-
-
-
 
 export const updatePaymentStatusByID = (id: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    //znajdz orderid po extorderid
-    db.get(
-      'SELECT orderId FROM payments WHERE id = ?',
-      [id],
-      (err, row: { orderId: number } | undefined) => {
-        if (err) return reject(err);
-        if (!row) return reject(new Error(`Nie znaleziono płatności dla ID=${id}`));
+    db.get('SELECT orderId FROM payments WHERE id = ?', [id], (err, row: { orderId: number } | undefined) => {
+      if (err) return reject(err);
+      if (!row) return reject(new Error(`Nie znaleziono płatności dla ID=${id}`));
 
-        const orderId = row.orderId;
+      const orderId = row.orderId;
+      db.run(
+        "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE id = ?",
+        [id],
+        (err2) => {
+          if (err2) return reject(err2);
 
-        // aktualizuj wpalte
-        db.run(
-          "UPDATE payments SET status = 'completed', updatedAt = datetime('now') WHERE ID = ?",
-          [id],
-          (err2) => {
-            if (err2) return reject(err2);
-
-            //Aktualizuj status zlecenia
-            db.run(
-              "UPDATE orders SET status = ? WHERE id = ?",
-              ['Opłacono', orderId],
-              (err3) => {
-                if (err3) return reject(err3);
-                // jest ok
-                resolve();
-              }
-            );
-          }
-        );
-      }
-    );
+          db.run(
+            "UPDATE orders SET paymentStatus = 'opłacono', status = 'w trakcie' WHERE id = ?",
+            [orderId],
+            (err3) => {
+              if (err3) return reject(err3);
+              resolve();
+            }
+          );
+        }
+      );
+    });
   });
 };
 
-
-
 export const confirmedHandler: RequestHandler = async (req, res) => {
   const extOrderId = req.query.extOrderId as string;
-
   try {
     await updatePaymentStatus(extOrderId);
     res.send(`
@@ -207,29 +210,24 @@ export const confirmedHandler: RequestHandler = async (req, res) => {
   }
 };
 
-
-
-
 export const confirmPayment: RequestHandler = (req, res) => {
   const paymentId = req.params.id;
-
-  db.get(
-    'SELECT id FROM payments WHERE id = ?',
-    [paymentId],
-    async (err, row: { id: string } | undefined) => {
-      if (err || !row) {
-        console.error('Nie znaleziono płatności lub błąd DB:', err?.message);
-        return res.status(404).json({ error: 'Płatność nie istnieje' });
-      }
-
-      try {
-        await updatePaymentStatusByID(row.id);
-        res.json({ success: true });
-      } catch (e) {
-        console.error('Błąd zatwierdzania płatności:', e);
-        res.status(500).json({ error: 'Błąd zatwierdzania płatności' });
-      }
+  db.get('SELECT id FROM payments WHERE id = ?', [paymentId], async (err, row: { id: string } | undefined) => {
+    if (err || !row) {
+      console.error('Nie znaleziono płatności lub błąd DB:', err?.message);
+      res.status(404).json({ error: 'Płatność nie istnieje' });
+      return;
     }
-  );
+
+    try {
+      await updatePaymentStatusByID(row.id);
+      res.json({ success: true });
+    } catch (e) {
+      console.error('Błąd zatwierdzania płatności:', e);
+      res.status(500).json({ error: 'Błąd zatwierdzania płatności' });
+    }
+  });
 };
 
+const router = Router();
+export default router;
