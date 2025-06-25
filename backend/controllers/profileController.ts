@@ -202,7 +202,7 @@ export const uploadAvatar = (req: Request, res: Response): void => {
     res.status(500).json({ error: e.message });
   }
 };
-export const getGuards = (req: Request, res: Response) => {
+/*export const getGuards = (req: Request, res: Response) => {
   db.all(
     'SELECT id, imie, nazwisko, username, mail, numertelefonu, stanowisko, avatar FROM profiles WHERE role = ?',
     ['guard'],
@@ -214,4 +214,58 @@ export const getGuards = (req: Request, res: Response) => {
     }
   );
 };
+*/
+//Dodane pod SearchScreen
+export const getGuards = (req: Request, res: Response) => {
+  let query = `
+    SELECT id, imie, nazwisko, username, mail, numertelefonu, stanowisko, avatar,
+      '' as lokalizacja, '' as plec, 3 as lata_doswiadczenia, '' as specjalnosci,
+      1 as licencja_bron, 7 as opinia
+    FROM profiles WHERE role = 'guard'
+  `;
+  const params: any[] = [];
 
+  // Filtrowanie po query params
+  if (req.query.imie) {
+    query += ' AND imie LIKE ?';
+    params.push(`%${req.query.imie}%`);
+  }
+  if (req.query.nazwisko) {
+    query += ' AND nazwisko LIKE ?';
+    params.push(`%${req.query.nazwisko}%`);
+  }
+  if (req.query.lokalizacja) {
+    query += ' AND stanowisko LIKE ?';
+    params.push(`%${req.query.lokalizacja}%`); // zakładamy, że stanowisko przechowuje lokalizację lub zmodyfikuj według bazy!
+  }
+  if (req.query.plec) {
+    query += ' AND plec = ?';
+    params.push(req.query.plec);
+  }
+  if (req.query.lata_doswiadczenia) {
+    query += ' AND lata_doswiadczenia >= ?';
+    params.push(req.query.lata_doswiadczenia);
+  }
+  if (req.query.specjalnosci) {
+    query += ' AND specjalnosci LIKE ?';
+    params.push(`%${req.query.specjalnosci}%`);
+  }
+  if (req.query.licencja_bron) {
+    query += ' AND licencja_bron = ?';
+    params.push(Number(req.query.licencja_bron));
+  }
+  if (req.query.opinia_min) {
+    query += ' AND opinia >= ?';
+    params.push(Number(req.query.opinia_min));
+  }
+
+  // UWAGA: jeśli masz osobną tabelę na specjalności, lokalizację, doświadczenie itd. – zmień SELECT!
+
+  // Jeśli nie masz kolumn w bazie na te dane, możesz je dodać przez migrację, lub tu symulować (tak jak powyżej).
+  // Zakładamy, że część pól jest na sztywno (do przetestowania).
+
+  db.all(query, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+};

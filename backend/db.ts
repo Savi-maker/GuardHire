@@ -41,7 +41,13 @@ db.serialize(() => {
      stanowisko TEXT,
      haslo TEXT,
      role TEXT DEFAULT 'user',
-     avatar TEXT
+     avatar TEXT,
+     lokalizacja TEXT,
+     plec TEXT,
+     lata_doswiadczenia INTEGER,
+     specjalnosci TEXT,
+     licencja_bron INTEGER,
+     opinia INTEGER              
   )
 `);
 
@@ -137,7 +143,24 @@ const defaultUsers = [
     stanowisko: 'Ochroniarz',
     haslo: 'kaska123',
     role: 'user'
-  }
+  },
+  // Użytkownik testowy do sprawdzenia ekranu SearchScreen
+  {
+  imie: 'Anna',
+  nazwisko: 'Nowak',
+  username: 'anowan',
+  mail: 'anna@guardhire.pl',
+  numertelefonu: '501234567',
+  stanowisko: 'Ochroniarz',
+  haslo: 'anna123',
+  role: 'guard',
+  lokalizacja: 'Warszawa',
+  plec: 'K',
+  lata_doswiadczenia: 3,
+  specjalnosci: 'imprezy masowe, ochrona VIP',
+  licencja_bron: 1,
+  opinia: 9
+}
 ];
 
 defaultUsers.forEach((user) => {
@@ -167,9 +190,6 @@ defaultUsers.forEach((user) => {
     }
   });
 });
-
-
-
 
 // ---------- NEWS ----------
 const news = [
@@ -213,14 +233,7 @@ db.run(`
   )
 `);
 
-
-
-
 // ---------- NOTIFICATIONS ----------
-
-
-
-
 
 const notifications = [
   {

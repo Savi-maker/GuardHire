@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export const API_URL = "http://192.168.1.111:3000";
+export const API_URL = "http://192.168.86.140:3000";
 
 
 
@@ -422,6 +422,28 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
 export async function getMyOrders(userId: number) {
   const res = await fetch(`${API_URL}/orders/my?userId=${userId}`);
   if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
+// Funkcja pobierająca ochroniarzy do api.ts
+export interface GuardType {
+  id: number;
+  imie: string;
+  nazwisko: string;
+  wiek: number;
+  plec: string;
+  lokalizacja: string;
+  lata_doswiadczenia: number;
+  specjalnosci: string;  // np. "Ochrona VIP, Ochrona imprez"
+  licencja_bron: boolean;
+  opinia: number; // 1-10
+  avatar?: string;
+}
+
+export async function searchGuards(filters: Partial<GuardType> = {}): Promise<GuardType[]> {
+  const params = new URLSearchParams(filters as any).toString();
+  const res = await fetch(`${API_URL}/profiles/guards?${params}`);
+  if (!res.ok) throw new Error('Błąd pobierania ochroniarzy');
   return await res.json();
 }
 
