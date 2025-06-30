@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 const miasta = [
-  'Warszawa','Kraków','Wrocław','Poznań','Gdańsk','Katowice','Łódź','Lublin','Szczecin','Bydgoszcz'
+  'Warszawa','Kielce','Kraków','Wrocław','Poznań','Gdańsk','Katowice','Łódź','Lublin','Szczecin','Bydgoszcz'
 ];
 const plecOptions = [
   { label: 'Dowolna', value: '' },

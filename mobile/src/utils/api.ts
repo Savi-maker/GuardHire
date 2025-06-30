@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export const API_URL = "http://192.168.86.140:3000";
+export const API_URL = "http://192.168.1.6:3000";
 
 
 
@@ -131,7 +131,7 @@ export async function resetPassword(data: {
     if (!verifyResponse.ok || !verifyData.exists) {
       return {
         success: false,
-        error: verifyData.message || 'Podane dane są nieprawidłowe lub użytkownik nie istnieje'
+        error: verifyData.message ?? 'Podane dane są nieprawidłowe lub użytkownik nie istnieje'
       };
     }
 
@@ -149,7 +149,7 @@ export async function resetPassword(data: {
     if (!resetResponse.ok) {
       return {
         success: false,
-        error: resetData.message || 'Wystąpił błąd podczas resetowania hasła'
+        error: resetData.message ?? 'Wystąpił błąd podczas resetowania hasła'
       };
     }
 
@@ -430,14 +430,17 @@ export interface GuardType {
   id: number;
   imie: string;
   nazwisko: string;
-  wiek: number;
-  plec: string;
-  lokalizacja: string;
-  lata_doswiadczenia: number;
-  specjalnosci: string;  // np. "Ochrona VIP, Ochrona imprez"
-  licencja_bron: boolean;
-  opinia: number; // 1-10
+  username: string;
+  mail: string;
+  numertelefonu: string;
+  stanowisko: string;
   avatar?: string;
+  lokalizacja: string;
+  plec: string;
+  lata_doswiadczenia: number;
+  specjalnosci: string;
+  licencja_bron: number;
+  opinia: number;
 }
 
 export async function searchGuards(filters: Partial<GuardType> = {}): Promise<GuardType[]> {

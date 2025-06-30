@@ -146,7 +146,7 @@ export const updateMyProfile = (req: Request, res: Response) => {
     }
   );
 };
-
+// można użyć do roli
 export const checkEmailExists = (req: Request, res: Response) => {
   const { email } = req.body;
 
@@ -202,69 +202,87 @@ export const uploadAvatar = (req: Request, res: Response): void => {
     res.status(500).json({ error: e.message });
   }
 };
-/*export const getGuards = (req: Request, res: Response) => {
-  db.all(
-    'SELECT id, imie, nazwisko, username, mail, numertelefonu, stanowisko, avatar FROM profiles WHERE role = ?',
-    ['guard'],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: 'Błąd pobierania ochroniarzy: ' + err.message });
-      }
-      res.json(rows);
-    }
-  );
-};
-*/
+
 //Dodane pod SearchScreen
+export const registerGuard = async (req: Request, res: Response) => {
+  const {
+    imie, nazwisko, username, mail, numertelefonu, stanowisko,
+    haslo, avatar, lokalizacja, plec, lata_doswiadczenia,
+    specjalnosci, licencja_bron, opinia
+  } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(haslo, 10);
+
+    db.run(
+      `INSERT INTO profiles (imie, nazwisko, username, mail, numertelefonu, stanowisko, haslo, role, avatar)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [imie, nazwisko, username, mail, numertelefonu, stanowisko, hashedPassword, 'guard', avatar],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const userId = this.lastID;
+        db.run(
+          `INSERT INTO guards_details (user_id, lokalizacja, plec, lata_doswiadczenia, specjalnosci, licencja_bron, opinia)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [userId, lokalizacja, plec, lata_doswiadczenia, specjalnosci, licencja_bron, opinia],
+          function (err2) {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ success: true, id: userId });
+          }
+        );
+      }
+    );
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Pobierz ochroniarzy z filtrami do SearchScreen
 export const getGuards = (req: Request, res: Response) => {
-  let query = `
-    SELECT id, imie, nazwisko, username, mail, numertelefonu, stanowisko, avatar,
-      '' as lokalizacja, '' as plec, 3 as lata_doswiadczenia, '' as specjalnosci,
-      1 as licencja_bron, 7 as opinia
-    FROM profiles WHERE role = 'guard'
+  let sql = `
+    SELECT p.id, p.imie, p.nazwisko, p.username, p.mail, p.numertelefonu, p.stanowisko, p.avatar,
+           g.lokalizacja, g.plec, g.lata_doswiadczenia, g.specjalnosci, g.licencja_bron, g.opinia
+    FROM profiles p
+    JOIN guards_details g ON p.id = g.user_id
+    WHERE p.role = 'guard'
   `;
   const params: any[] = [];
 
-  // Filtrowanie po query params
   if (req.query.imie) {
-    query += ' AND imie LIKE ?';
+    sql += ' AND p.imie LIKE ?';
     params.push(`%${req.query.imie}%`);
   }
   if (req.query.nazwisko) {
-    query += ' AND nazwisko LIKE ?';
+    sql += ' AND p.nazwisko LIKE ?';
     params.push(`%${req.query.nazwisko}%`);
   }
   if (req.query.lokalizacja) {
-    query += ' AND stanowisko LIKE ?';
-    params.push(`%${req.query.lokalizacja}%`); // zakładamy, że stanowisko przechowuje lokalizację lub zmodyfikuj według bazy!
+    sql += ' AND g.lokalizacja LIKE ?';
+    params.push(`%${req.query.lokalizacja}%`);
   }
   if (req.query.plec) {
-    query += ' AND plec = ?';
+    sql += ' AND g.plec = ?';
     params.push(req.query.plec);
   }
   if (req.query.lata_doswiadczenia) {
-    query += ' AND lata_doswiadczenia >= ?';
-    params.push(req.query.lata_doswiadczenia);
+    sql += ' AND g.lata_doswiadczenia >= ?';
+    params.push(Number(req.query.lata_doswiadczenia));
   }
   if (req.query.specjalnosci) {
-    query += ' AND specjalnosci LIKE ?';
+    sql += ' AND g.specjalnosci LIKE ?';
     params.push(`%${req.query.specjalnosci}%`);
   }
   if (req.query.licencja_bron) {
-    query += ' AND licencja_bron = ?';
+    sql += ' AND g.licencja_bron = ?';
     params.push(Number(req.query.licencja_bron));
   }
   if (req.query.opinia_min) {
-    query += ' AND opinia >= ?';
+    sql += ' AND g.opinia >= ?';
     params.push(Number(req.query.opinia_min));
   }
 
-  // UWAGA: jeśli masz osobną tabelę na specjalności, lokalizację, doświadczenie itd. – zmień SELECT!
-
-  // Jeśli nie masz kolumn w bazie na te dane, możesz je dodać przez migrację, lub tu symulować (tak jak powyżej).
-  // Zakładamy, że część pól jest na sztywno (do przetestowania).
-
-  db.all(query, params, (err, rows) => {
+  db.all(sql, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
