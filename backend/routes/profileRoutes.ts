@@ -8,10 +8,12 @@ import {
   updateMyProfile,
   uploadAvatar,
   upload,
-  checkEmailExists
+  checkEmailExists,
+  registerGuard,
+  getGuards
 } from '../controllers/profileController';
 import { authenticateJWT, requireRole } from '../middleware/auth';
-import { registerGuard, getGuards } from '../controllers/profileController';
+
 
 const router = express.Router();
 
@@ -24,6 +26,6 @@ router.patch('/me', authenticateJWT, updateMyProfile);
 router.patch('/:id/role', authenticateJWT, requireRole('admin'), changeUserRole);
 router.post('/me/avatar', authenticateJWT, upload, uploadAvatar);
 router.post('/check-email', checkEmailExists);
-router.post('/profiles/register-guard', registerGuard);
-router.get('/profiles/guards', getGuards);
+router.post('/register-guard', registerGuard);
+router.get('/guards', getGuards);
 export default router;
