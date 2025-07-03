@@ -131,7 +131,7 @@ export async function resetPassword(data: {
     if (!verifyResponse.ok || !verifyData.exists) {
       return {
         success: false,
-        error: verifyData.message || 'Podane dane są nieprawidłowe lub użytkownik nie istnieje'
+        error: verifyData.message ?? 'Podane dane są nieprawidłowe lub użytkownik nie istnieje'
       };
     }
 
@@ -149,7 +149,7 @@ export async function resetPassword(data: {
     if (!resetResponse.ok) {
       return {
         success: false,
-        error: resetData.message || 'Wystąpił błąd podczas resetowania hasła'
+        error: resetData.message ?? 'Wystąpił błąd podczas resetowania hasła'
       };
     }
 
@@ -422,6 +422,31 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
 export async function getMyOrders(userId: number) {
   const res = await fetch(`${API_URL}/orders/my?userId=${userId}`);
   if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
+// Funkcja pobierająca ochroniarzy do api.ts
+export interface GuardType {
+  id: number;
+  imie: string;
+  nazwisko: string;
+  username: string;
+  mail: string;
+  numertelefonu: string;
+  stanowisko: string;
+  avatar?: string;
+  lokalizacja: string;
+  plec: string;
+  lata_doswiadczenia: number;
+  specjalnosci: string;
+  licencja_bron: number;
+  opinia: number;
+}
+
+export async function searchGuards(filters: Partial<GuardType> = {}): Promise<GuardType[]> {
+  const params = new URLSearchParams(filters as any).toString();
+  const res = await fetch(`${API_URL}/profiles/guards?${params}`);
+  if (!res.ok) throw new Error('Błąd pobierania ochroniarzy');
   return await res.json();
 }
 

@@ -146,7 +146,7 @@ export const updateMyProfile = (req: Request, res: Response) => {
     }
   );
 };
-
+// można użyć do roli
 export const checkEmailExists = (req: Request, res: Response) => {
   const { email } = req.body;
 
@@ -202,16 +202,88 @@ export const uploadAvatar = (req: Request, res: Response): void => {
     res.status(500).json({ error: e.message });
   }
 };
-export const getGuards = (req: Request, res: Response) => {
-  db.all(
-    'SELECT id, imie, nazwisko, username, mail, numertelefonu, stanowisko, avatar FROM profiles WHERE role = ?',
-    ['guard'],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: 'Błąd pobierania ochroniarzy: ' + err.message });
+
+//Dodane pod SearchScreen
+export const registerGuard = async (req: Request, res: Response) => {
+  const {
+    imie, nazwisko, username, mail, numertelefonu, stanowisko,
+    haslo, avatar, lokalizacja, plec, lata_doswiadczenia,
+    specjalnosci, licencja_bron, opinia
+  } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(haslo, 10);
+
+    db.run(
+      `INSERT INTO profiles (imie, nazwisko, username, mail, numertelefonu, stanowisko, haslo, role, avatar)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [imie, nazwisko, username, mail, numertelefonu, stanowisko, hashedPassword, 'guard', avatar],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const userId = this.lastID;
+        db.run(
+          `INSERT INTO guards_details (user_id, lokalizacja, plec, lata_doswiadczenia, specjalnosci, licencja_bron, opinia)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [userId, lokalizacja, plec, lata_doswiadczenia, specjalnosci, licencja_bron, opinia],
+          function (err2) {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ success: true, id: userId });
+          }
+        );
       }
-      res.json(rows);
-    }
-  );
+    );
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
+// Pobierz ochroniarzy z filtrami do SearchScreen
+export const getGuards = (req: Request, res: Response) => {
+  let sql = `
+    SELECT p.id, p.imie, p.nazwisko, p.username, p.mail, p.numertelefonu, p.stanowisko, p.avatar,
+           g.lokalizacja, g.plec, g.lata_doswiadczenia, g.specjalnosci, g.licencja_bron, g.opinia
+    FROM profiles p
+    JOIN guards_details g ON p.id = g.user_id
+    WHERE p.role = 'guard'
+  `;
+  const params: any[] = [];
+
+  if (req.query.imie) {
+    sql += ' AND p.imie LIKE ?';
+    params.push(`%${req.query.imie}%`);
+  }
+  if (req.query.nazwisko) {
+    sql += ' AND p.nazwisko LIKE ?';
+    params.push(`%${req.query.nazwisko}%`);
+  }
+  if (req.query.lokalizacja) {
+    sql += ' AND g.lokalizacja LIKE ?';
+    params.push(`%${req.query.lokalizacja}%`);
+  }
+  if (req.query.plec) {
+    sql += ' AND g.plec = ?';
+    params.push(req.query.plec);
+  }
+  if (req.query.lata_doswiadczenia) {
+    sql += ' AND g.lata_doswiadczenia >= ?';
+    params.push(Number(req.query.lata_doswiadczenia));
+  }
+  if (req.query.specjalnosci) {
+    sql += ' AND g.specjalnosci LIKE ?';
+    params.push(`%${req.query.specjalnosci}%`);
+  }
+  if (req.query.licencja_bron) {
+    sql += ' AND g.licencja_bron = ?';
+    params.push(Number(req.query.licencja_bron));
+  }
+  if (req.query.opinia_min) {
+    sql += ' AND g.opinia >= ?';
+    params.push(Number(req.query.opinia_min));
+  }
+
+  db.all(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+};
