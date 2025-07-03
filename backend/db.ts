@@ -89,6 +89,20 @@ db.run(`
     createdAt TEXT DEFAULT (datetime('now')),
     updatedAt TEXT DEFAULT (datetime('now'))
   )
+
+`);
+
+// ---------- REPORTS ----------
+db.run(`
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    orderId INTEGER NOT NULL,
+    guardId INTEGER NOT NULL,
+    description TEXT,
+    audioNote TEXT,   
+    photo TEXT,       
+    createdAt TEXT DEFAULT (datetime('now'))
+  )
 `);
   // ---------- DEFAULT ORDERS ----------
 

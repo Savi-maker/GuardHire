@@ -506,3 +506,86 @@ export async function confirmPayment(paymentId: string): Promise<ApiResponse> {
     return { success: false, error: 'Błąd połączenia' };
   }
 }
+
+export type Raport = {
+  id: number;
+  orderId: number;
+  guardId: number;
+  description: string;
+  audioNote?: string;
+  photo?: string;
+  createdAt: string;
+};
+
+export async function getRaports(orderId: number): Promise<Raport[]> {
+  const res = await fetch(`${API_URL}/reports?orderId=${orderId}`);
+  if (!res.ok) throw new Error('Błąd pobierania raportów');
+  return await res.json();
+}
+
+export async function addRaport({
+  orderId,
+  guardId,
+  description,
+  photoUri,
+  audioUri,
+}: {
+  orderId: number;
+  guardId: number;
+  description: string;
+  photoUri?: string;
+  audioUri?: string;
+}) {
+  const formData = new FormData();
+  formData.append("orderId", orderId.toString());
+  formData.append("guardId", guardId.toString());
+  formData.append("description", description);
+
+  if (photoUri)
+    formData.append("photo", {
+      uri: photoUri,
+      name: "photo.jpg",
+      type: "image/jpeg",
+    } as any);
+
+  if (audioUri)
+    formData.append("audioNote", {
+      uri: audioUri,
+      name: "note.m4a",
+      type: "audio/mp4",
+    } as any);
+
+  const token = await getToken();
+  const headers: any = {
+    "Content-Type": "multipart/form-data",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const res = await fetch(`${API_URL}/reports`, {
+    method: "POST",
+    body: formData,
+    headers,
+  });
+
+  let response;
+  try {
+    response = await res.json();
+  } catch (err) {
+    response = {};
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      response?.error ||
+      response?.message ||
+      "Błąd wysyłania raportu"
+    );
+  }
+  return response;
+}
+
+export async function getAllRaports(): Promise<Raport[]> {
+  const res = await fetch(`${API_URL}/reports/all`);
+  if (!res.ok) throw new Error('Błąd pobierania raportów');
+  return await res.json();
+}
