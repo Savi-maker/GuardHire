@@ -106,23 +106,6 @@ db.run(`
 `);
   // ---------- DEFAULT ORDERS ----------
 
-  db.get('SELECT COUNT(*) as count FROM orders', [], (err, row) => {
-    if (err) {
-      console.error('Błąd przy sprawdzaniu orders:', err.message);
-    } else if ((row as { count: number }).count === 0) {
-      const stmt = db.prepare('INSERT INTO orders (name, status, date) VALUES (?, ?, ?)');
-      const defaultOrders = [
-        { name: 'Zlecenie 1', status: 'nowe', date: new Date().toISOString() },
-        { name: 'Zlecenie 2', status: 'w trakcie', date: new Date().toISOString() },
-        { name: 'Zlecenie 3', status: 'zakończone', date: new Date().toISOString() },
-      ];
-      defaultOrders.forEach(order => {
-        stmt.run(order.name, order.status, order.date);
-      });
-      stmt.finalize();
-      console.log('Dodano domyślne zlecenia');
-    }
-  });
 });
 
 const defaultUsers = [

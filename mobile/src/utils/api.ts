@@ -589,3 +589,11 @@ export async function getAllRaports(): Promise<Raport[]> {
   if (!res.ok) throw new Error('Błąd pobierania raportów');
   return await res.json();
 }
+
+export async function getUserRaports(userId: number): Promise<Raport[]> {
+  const res = await fetch(`${API_URL}/reports/byUser/${userId}`);
+  if (!res.ok) throw new Error('Błąd pobierania raportów');
+  return await res.json();
+}
+
+

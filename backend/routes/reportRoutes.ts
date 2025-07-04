@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { getReportsByOrder, addReport, getReports } from '../controllers/reportController';
+import { getReportsByOrder, addReport, getReports, getReportsByUser  } from '../controllers/reportController';
 
 const router = express.Router();
 
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
-
+router.get('/byUser/:userId', getReportsByUser);
 router.get('/all', getReports);
 router.get('/', getReportsByOrder);
 router.post('/',

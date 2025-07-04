@@ -22,7 +22,7 @@ const DetailScreen: React.FC<DetailScreenProps> = ({
   news,
   onDelete,
   onEdit,
-  role = 'admin', 
+  role, 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(news.title);
