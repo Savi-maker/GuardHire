@@ -202,7 +202,7 @@ const RegisterScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/profiles/register`, {
+      const response = await fetch(`${API_URL}/auth/register`, {   // <- poprawka endpointu!
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,8 +211,8 @@ const RegisterScreen: React.FC = () => {
           username,
           mail: email,
           haslo: password,
-          imie: '',
-          nazwisko: '',
+          imie,
+          nazwisko,
           numertelefonu: numerTelefonu,
           stanowisko: 'Pracownik',
           role: 'user'

@@ -6,6 +6,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import profileRoutes from './routes/profileRoutes';
 import commentRoutes from './routes/commentRoutes';
 import reportRoutes from './routes/reportRoutes';
+import authRoutes from './routes/authRoutes';
 import { db } from './db';
 import path from 'path';
 import cors from 'cors';
@@ -18,6 +19,7 @@ app.use(cors());
 
 app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
 
+app.use('/auth', authRoutes);
 app.use('/news', newsRoutes);
 app.use('/orders', orderRoutes);
 app.use('/notifications', notificationRoutes);

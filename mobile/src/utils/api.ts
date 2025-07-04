@@ -81,7 +81,7 @@ export async function registerProfile(data: {
   haslo: string;
 }): Promise<ApiResponse> {
   try {
-    const res = await fetch(`${API_URL}/profiles/register`, {
+    const res = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export async function resetPassword(data: {
 }): Promise<ApiResponse> {
   try {
     // Najpierw sprawdzamy czy dane się zgadzają
-    const verifyResponse = await fetch(`${API_URL}/profiles/verify-user`, {
+    const verifyResponse = await fetch(`${API_URL}/auth/verify-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ export async function resetPassword(data: {
     }
 
     // Jeśli weryfikacja się powiodła, resetujemy hasło
-    const resetResponse = await fetch(`${API_URL}/profiles/reset-password`, {
+    const resetResponse = await fetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

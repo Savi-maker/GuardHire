@@ -5,7 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
-import { resetPassword } from '../../utils/api';
+import { API_URL } from '../../utils/api';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -104,7 +104,7 @@ const ResetPasswordScreen: React.FC = () => {
   };
 
   const validatePassword = (password: string): boolean => {
-    return password.length >= 8;
+    return password.length >= 6; // 6 dla spójności z backendem/rejestracją
   };
 
   const changeLanguage = async (lang: string) => {
@@ -138,7 +138,7 @@ const ResetPasswordScreen: React.FC = () => {
 
     if (!validatePassword(newPassword)) {
       setPasswordError(true);
-      showModal('Błąd', 'Hasło musi mieć co najmniej 8 znaków', 'error');
+      showModal('Błąd', 'Hasło musi mieć co najmniej 6 znaków', 'error');
       return;
     }
 
@@ -150,17 +150,25 @@ const ResetPasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await resetPassword({
-        mail: email,
-        imie,
-        nazwisko,
-        newPassword
+      // Poprawiony endpoint oraz struktura requesta!
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mail: email,
+          imie,
+          nazwisko,
+          newPassword
+        }),
       });
+      const data = await response.json();
 
-      if (response.success) {
+      if (data.success) {
         showModal('Sukces', 'Hasło zostało zmienione pomyślnie', 'success');
       } else {
-        showModal('Błąd', response.error || 'Wystąpił błąd podczas resetowania hasła', 'error');
+        showModal('Błąd', data.error || 'Wystąpił błąd podczas resetowania hasła', 'error');
       }
     } catch (error) {
       showModal('Błąd', 'Wystąpił błąd podczas resetowania hasła', 'error');

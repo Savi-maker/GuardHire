@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = 'twoj_tajny_klucz';
 
-export const register = async (req: Request, res: Response) => {
+export const register = (req: Request, res: Response) => {
     const {
         username,
         mail,
@@ -18,39 +18,48 @@ export const register = async (req: Request, res: Response) => {
     } = req.body;
 
     if (!username || !mail || !haslo) {
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             error: 'Wszystkie wymagane pola muszą być wypełnione'
         });
+        return;
     }
 
     db.get(
         'SELECT * FROM profiles WHERE username = ? OR mail = ?',
         [username, mail],
-        async (err, existingUser) => {
+        (err, existingUser) => {
             if (err) {
-                console.error('Błąd bazy danych:', err);
-                return res.status(500).json({
+                res.status(500).json({
                     success: false,
                     error: 'Błąd serwera podczas sprawdzania użytkownika'
                 });
+                return;
             }
 
             if (existingUser) {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Użytkownik o podanej nazwie lub adresie email już istnieje'
                 });
+                return;
             }
 
-            try {
-                const hashedPassword = await bcrypt.hash(haslo, 10);
+            // hashowanie i rejestracja
+            bcrypt.hash(haslo, 10, (hashErr, hashedPassword) => {
+                if (hashErr) {
+                    res.status(500).json({
+                        success: false,
+                        error: 'Błąd przy szyfrowaniu hasła'
+                    });
+                    return;
+                }
 
                 db.run(
                     `INSERT INTO profiles (
-            username, mail, haslo, role, 
-            imie, nazwisko, numertelefonu, stanowisko
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        username, mail, haslo, role, 
+                        imie, nazwisko, numertelefonu, stanowisko
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         username,
                         mail,
@@ -61,13 +70,13 @@ export const register = async (req: Request, res: Response) => {
                         numertelefonu,
                         stanowisko
                     ],
-                    function(err) {
+                    function (err) {
                         if (err) {
-                            console.error('Błąd podczas dodawania użytkownika:', err);
-                            return res.status(500).json({
+                            res.status(500).json({
                                 success: false,
                                 error: 'Błąd podczas tworzenia użytkownika'
                             });
+                            return;
                         }
 
                         const token = jwt.sign(
@@ -87,13 +96,102 @@ export const register = async (req: Request, res: Response) => {
                         });
                     }
                 );
-            } catch (error) {
-                console.error('Błąd podczas przetwarzania rejestracji:', error);
+            });
+        }
+    );
+};
+
+export const verifyUser = (req: Request, res: Response) => {
+    const { mail, imie, nazwisko } = req.body;
+
+    db.get(
+        'SELECT * FROM profiles WHERE mail = ? AND imie = ? AND nazwisko = ?',
+        [mail, imie, nazwisko],
+        (err, user) => {
+            if (err) {
                 res.status(500).json({
                     success: false,
-                    error: 'Wystąpił błąd podczas rejestracji'
+                    message: 'Błąd serwera podczas weryfikacji'
                 });
+                return;
             }
+
+            if (!user) {
+                res.status(404).json({
+                    success: false,
+                    exists: false,
+                    message: 'Użytkownik nie istnieje lub dane są nieprawidłowe'
+                });
+                return;
+            }
+
+            res.json({
+                success: true,
+                exists: true
+            });
+        }
+    );
+};
+
+export const resetPassword = (req: Request, res: Response) => {
+    const { mail, imie, nazwisko, newPassword } = req.body;
+
+    if (!mail || !imie || !nazwisko || !newPassword) {
+        res.status(400).json({
+            success: false,
+            error: 'Brak wymaganych danych'
+        });
+        return;
+    }
+
+    db.get(
+        'SELECT * FROM profiles WHERE mail = ? AND imie = ? AND nazwisko = ?',
+        [mail, imie, nazwisko],
+        (err, user: any) => {
+            if (err) {
+                res.status(500).json({
+                    success: false,
+                    error: 'Błąd serwera podczas weryfikacji'
+                });
+                return;
+            }
+
+            if (!user) {
+                res.status(404).json({
+                    success: false,
+                    error: 'Użytkownik nie istnieje lub dane są nieprawidłowe'
+                });
+                return;
+            }
+
+            bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
+                if (hashErr) {
+                    res.status(500).json({
+                        success: false,
+                        error: 'Błąd przy szyfrowaniu hasła'
+                    });
+                    return;
+                }
+
+                db.run(
+                    'UPDATE profiles SET haslo = ? WHERE id = ?',
+                    [hashedPassword, user.id],
+                    function (err) {
+                        if (err) {
+                            res.status(500).json({
+                                success: false,
+                                error: 'Błąd podczas aktualizacji hasła'
+                            });
+                            return;
+                        }
+
+                        res.json({
+                            success: true,
+                            message: 'Hasło zostało zresetowane'
+                        });
+                    }
+                );
+            });
         }
     );
 };
