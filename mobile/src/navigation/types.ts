@@ -24,4 +24,5 @@ export type RootStackParamList = {
   AssignedOrders: undefined;
   Raport: { orderId: number };
   AddRaport: { orderId: number; guardId: number };
+  UserRaports: undefined;
 };

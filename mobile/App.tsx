@@ -29,6 +29,7 @@ import CurrentLocationScreen from './src/screens/Location/CurrentLocationScreen'
 import AssignedOrdersScreen from './src/screens/AssignedOrders/AssignedOrdersScreen';
 import RaportScreen from './src/screens/Raport/RaportScreen';
 import AddRaportScreen from './src/screens/Raport/AddRaportScreen';
+import UserRaportScreen from './src/screens/Raport/UserRaportsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -58,6 +59,7 @@ export default function App() {
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />
           <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+          <Stack.Screen name="UserRaports" component={UserRaportScreen} options={{ headerShown: true, title: 'Twoje Raporty' }} />
           <Stack.Screen name="Raport" component={RaportScreen} options={{ headerShown: true, title: 'Raporty' }} />
           <Stack.Screen name="CurrentLocation" component={CurrentLocationScreen} options={{ headerShown: true, title: 'Twoja lokalizacja' }} />
           <Stack.Screen name="AddRaport" component={AddRaportScreen} options={{ headerShown: true, title: 'Dodaj raport' }} />

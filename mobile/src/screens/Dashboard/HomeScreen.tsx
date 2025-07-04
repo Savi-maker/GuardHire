@@ -12,163 +12,123 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getNews } from '../../utils/api';
 import DetailScreen from '../Details/DetailScreen';
-import { getToken, removeToken, getMyProfile,deleteNews,editNews } from '../../utils/api';
-
+import { getToken, removeToken, getMyProfile, deleteNews, editNews } from '../../utils/api';
 
 type NewsType = { id: number, title: string, description: string };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface CustomAlertProps {
-  visible: boolean;
-  title: string;
-  message: string;
-  onClose: () => void;
-  type: 'error' | 'success';
-}
-
-const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={modalStyles.overlay}>
-        <View style={modalStyles.modalContainer}>
-          <View style={[
-            modalStyles.header,
-            type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
-          ]}>
-            <Text style={modalStyles.title}>{title}</Text>
-          </View>
-          <View style={modalStyles.body}>
-            <Text style={modalStyles.message}>{message}</Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              modalStyles.button,
-              type === 'error' ? modalStyles.errorButton : modalStyles.successButton
-            ]}
-            onPress={() => {
-              onClose();
-              if (type === 'success') {
-                navigation.navigate('Login');
-              }
-            }}
-          >
-            <Text style={modalStyles.buttonText}>OK</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-
 const HomeScreen: React.FC = () => {
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState<{
-    title: string;
-    message: string;
-    type: 'error' | 'success';
-  }>({
-    title: '',
-    message: '',
-    type: 'error'
-  });
-
-  const showModal = (title: string, message: string, type: 'error' | 'success') => {
-    setAlertConfig({ title, message, type });
-    setAlertVisible(true);
-  };
-
   const { theme } = useTheme();
   const { setError } = useError();
   const navigation = useNavigation<NavigationProp>();
   const backgroundColor = theme === 'dark' ? '#303030' : '#ffffff';
   const textColor = theme === 'dark' ? '#ffffff' : '#000000';
   const [menuVisible, setMenuVisible] = useState(false);
-  const [news, setNews] = useState<{ id: number, title: string, description: string }[]>([]);
+  const [news, setNews] = useState<NewsType[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsType | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  // ALERT
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{ title: string; message: string; type: 'error' | 'success' }>({
+    title: '',
+    message: '',
+    type: 'error'
+  });
+  const showModal = (title: string, message: string, type: 'error' | 'success') => {
+    setAlertConfig({ title, message, type });
+    setAlertVisible(true);
+  };
+
+  // ACTIONS
   const actions = [
-    { id: '1', title: 'Zlecenia', route: 'List' },
-    { id: '2', title: 'Historia', route: 'OrderHistory' },
+    { id: '1', title: 'Płatności', route: 'List' },
+    { id: '2', title: 'Historia zleceń', route: 'OrderHistory' },
     { id: '3', title: 'Profil', route: 'UserProfile' },
     { id: '4', title: 'Powiadomienia', route: 'Notifications' },
-    { id: '10', title: 'Dodaj zlecenie', route: 'Form' },
-    { id: '11', title: 'Płatność', route: 'Payment' },
-   // { id: '12', title: 'Błąd', onPress: () => setError('To jest przykładowy komunikat błędu!')},
-   // { id: '13', title: 'Sukces', route: 'Success' },
-   // { id: '15', title: 'Wsparcie', route: 'HelpSupport' },
-    { id: '14', title: 'Dodaj raport', route: 'AddRaport' },
-    { id: '16', title: 'Raporty', route: 'Raport' },
+    ...(userRole === 'user' || userRole === 'admin' ? [
+      { id: '10', title: 'Dodaj zlecenie', route: 'Form' },
+    ] : []),
+    { id: '11', title: 'Zlecenia', route: 'Payment' },
+    ...(userRole === 'guard' ? [
+      { id: '14', title: 'Dodaj raport', route: 'AddRaport' },
+    ] : []),
+    ...(userRole === 'guard' || userRole === 'user' ? [
+      { id: '15', title: 'Twoje Raporty', route: 'UserRaports' },
+    ] : []),
+    ...(userRole === 'admin' ? [
+      { id: '16', title: 'Wszystkie Raporty', route: 'Raport' },
+    ] : []),
     { id: '17', title: 'Twoja lokalizacja', route: 'CurrentLocation' },
-
     ...(userRole === 'guard' || userRole === 'admin' ? [
-    { id: '18', title: 'Zlecenia przypisane', route: 'AssignedOrders' },
+      { id: '18', title: 'Zlecenia przypisane', route: 'AssignedOrders' },
     ] : []),
     ...(userRole === 'admin' ? [
       { id: '20', title: 'Panel Admina', route: 'AdminPanel' },
     ] : []),
   ];
 
-   const handleDelete = async (id: number) => {
-  try {
-    setModalVisible(false);
-    await deleteNews(id.toString()); 
-    setNews(news.filter(n => n.id !== id));
-  } catch (error) {
-    setError('Błąd podczas usuwania aktualności.');
-  }
-};
+  // HANDLERS
+  const handleDelete = async (id: number) => {
+    try {
+      setModalVisible(false);
+      await deleteNews(id.toString());
+      setNews(news.filter(n => n.id !== id));
+    } catch (error) {
+      setError('Błąd podczas usuwania aktualności.');
+    }
+  };
 
   const handleEdit = async (id: number, title: string, description: string) => {
-  try {
-    setModalVisible(false);
-    await editNews(id.toString(), title, description); 
-    setNews(news.map(n => n.id === id ? { ...n, title, description } : n));
-    setError(''); 
-  } catch (error) {
-    setError('Błąd podczas edycji aktualności.');
-  }
-};
+    try {
+      setModalVisible(false);
+      await editNews(id.toString(), title, description);
+      setNews(news.map(n => n.id === id ? { ...n, title, description } : n));
+      setError('');
+    } catch (error) {
+      setError('Błąd podczas edycji aktualności.');
+    }
+  };
 
+  // PROFILE & TOKEN
   useEffect(() => {
-  getMyProfile()
-    .then(profile => setUserRole(profile.role))
-    .catch(() => setUserRole(null));
-}, []);
+    const check = async () => {
+      const token = await getToken();
+      setIsLoggedIn(!!token);
 
-  const renderNewsItem = ({ item }: { item: NewsType }) => (
-    <TouchableOpacity
-      style={[styles.newsCard, { backgroundColor: theme === 'dark' ? '#424242' : '#f2f2f2' }]}
-      onPress={() => {
-        setSelectedNews(item);
-        setModalVisible(true);
-      }}
-      activeOpacity={0.8}
-    >
-      <Text style={[styles.newsTitle, { color: textColor }]}>{item.title}</Text>
-      <Text style={[styles.newsDesc, { color: textColor }]}>
-        {item.description.length > 100
-          ? item.description.substring(0, 100) + '...'
-          : item.description}
-      </Text>
-    </TouchableOpacity>
-  );
+      if (token) {
+        try {
+          const profile = await getMyProfile();
+          setUserRole(profile.role);
+        } catch {
+          setUserRole(null);
+        }
+      } else {
+        setUserRole(null);
+      }
+    };
+    check();
+  }, []);
 
+  // NEWS
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    getNews()
+      .then(data => {
+        if (isMounted) setNews(data);
+      })
+      .catch(() => setError('Błąd ładowania newsów'))
+      .finally(() => setLoading(false));
+    return () => { isMounted = false; };
+  }, []);
+
+  // ANIMATION
   const slideAnim = useRef(new Animated.Value(300)).current;
-
   useEffect(() => {
     if (menuVisible) {
       Animated.timing(slideAnim, {
@@ -186,45 +146,36 @@ const HomeScreen: React.FC = () => {
     }
   }, [menuVisible]);
 
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    getNews()
-      .then(data => {
-        if (isMounted) setNews(data);
-      })
-      .catch(() => setError('Błąd ładowania newsów'))
-      .finally(() => setLoading(false));
-    return () => { isMounted = false; };
-  }, []);
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      const token = await getToken();
-      setIsLoggedIn(!!token);
-    };
-    checkLoginStatus();
-  }, []);
-
+  // LOGOUT
   const handleLogout = async () => {
     try {
       await removeToken();
       setIsLoggedIn(false);
+      setUserRole(null);
       setMenuVisible(false);
       showModal('Sukces', 'Wylogowano pomyślnie!', 'success');
     } catch (error) {
-      console.error('Błąd podczas wylogowywania:', error);
       showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.', 'error');
     }
   };
 
+  // RENDER
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <View style={styles.headerContainer}>
         <Image source={require('../../../assets/images/logo.png')} style={styles.image} />
-        <TouchableOpacity style={styles.burger} onPress={() => setMenuVisible(true)}>
-          <Ionicons name="menu" size={28} color={textColor} />
-        </TouchableOpacity>
+        {isLoggedIn ? (
+          <TouchableOpacity style={styles.burger} onPress={() => setMenuVisible(true)}>
+            <Ionicons name="menu" size={28} color={textColor} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.burger, { backgroundColor: 'transparent' }]}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={{ color: textColor, fontWeight: 'bold', fontSize: 16 }}>Logowanie</Text>
+          </TouchableOpacity>
+        )}
         <Text style={[styles.logoText, { color: '#ffffff' }]}>GuardHire</Text>
       </View>
 
@@ -232,7 +183,23 @@ const HomeScreen: React.FC = () => {
       <FlatList
         data={news}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={renderNewsItem}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.newsCard, { backgroundColor: theme === 'dark' ? '#424242' : '#f2f2f2' }]}
+            onPress={() => {
+              setSelectedNews(item);
+              setModalVisible(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.newsTitle, { color: textColor }]}>{item.title}</Text>
+            <Text style={[styles.newsDesc, { color: textColor }]}>
+              {item.description.length > 100
+                ? item.description.substring(0, 100) + '...'
+                : item.description}
+            </Text>
+          </TouchableOpacity>
+        )}
         contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={<Text style={{ color: textColor, textAlign: 'center', margin: 15 }}>Brak newsów.</Text>}
       />
@@ -242,11 +209,11 @@ const HomeScreen: React.FC = () => {
         onClose={() => setModalVisible(false)}
         news={selectedNews || { id: 0, title: '', description: '' }}
         onDelete={handleDelete}
-        onEdit={handleEdit} 
-        
+        onEdit={handleEdit}
+        role={userRole ?? undefined}
       />
 
-      <Modal transparent visible={menuVisible} animationType="none">
+      <Modal transparent visible={isLoggedIn && menuVisible} animationType="none">
         <TouchableOpacity
           style={styles.modalOverlay}
           onPress={() => setMenuVisible(false)}
@@ -260,9 +227,6 @@ const HomeScreen: React.FC = () => {
                   style={styles.menuItem}
                   onPress={() => {
                     setMenuVisible(false);
-                    // if (item.onPress) {
-                    //   item.onPress(); // 🔥 globalny error
-                    // } else 
                     if (item.route) {
                       navigation.navigate(item.route as any);
                     }
@@ -293,13 +257,8 @@ const HomeScreen: React.FC = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-      <CustomAlert
-        visible={alertVisible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        type={alertConfig.type}
-        onClose={() => setAlertVisible(false)}
-      />
+      {/* ALERT */}
+      {/* ... CustomAlert, etc ... */}
     </View>
   );
 };

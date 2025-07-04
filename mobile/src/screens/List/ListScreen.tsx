@@ -146,7 +146,7 @@ const ListScreen: React.FC = () => {
         { backgroundColor: isDark ? '#232323' : '#ffffff' }
       ]}>
         <Ionicons name="list-outline" size={24} color={isDark ? '#82b1ff' : '#007AFF'} />
-        <Text style={[styles.topTitle, { color: isDark ? '#fff' : '#333' }]}>Moje zlecenia</Text>
+        <Text style={[styles.topTitle, { color: isDark ? '#fff' : '#333' }]}>Moje Płatności</Text>
         <Ionicons
           name="close"
           size={28}

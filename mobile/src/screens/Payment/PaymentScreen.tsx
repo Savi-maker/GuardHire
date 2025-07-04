@@ -38,10 +38,8 @@ const PaymentScreen: React.FC = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [zaleglosci, setZaleglosci] = useState<PaymentItem[]>([]);
-  const [historia, setHistoria] = useState<PaymentItem[]>([]);
+  const [allPayments, setAllPayments] = useState<PaymentItem[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userId, setUserId] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -52,10 +50,8 @@ const PaymentScreen: React.FC = () => {
       try {
         const profile = await getMyProfile();
         setIsAdmin(profile.role === 'admin');
-        setUserId(profile.id);
         const data = await getPaymentList(profile.id, profile.role);
-        setZaleglosci(data.filter((item: PaymentItem) => item.status === 'pending'));
-        setHistoria(data.filter((item: PaymentItem) => item.status !== 'pending'));
+        setAllPayments(data);
       } catch (err) {
         Alert.alert('Błąd', 'Nie udało się pobrać danych płatności');
       }
@@ -86,10 +82,10 @@ const PaymentScreen: React.FC = () => {
     const res = await confirmPayment(id);
     if (res.success) {
       Alert.alert('Sukces', 'Płatność zatwierdzona');
+      // Odśwież dane
       const profile = await getMyProfile();
       const data = await getPaymentList(profile.id, profile.role);
-      setZaleglosci(data.filter((item: PaymentItem) => item.status === 'pending'));
-      setHistoria(data.filter((item: PaymentItem) => item.status !== 'pending'));
+      setAllPayments(data);
     } else {
       Alert.alert('Błąd', res.error || 'Nie udało się zatwierdzić');
     }
@@ -105,11 +101,8 @@ const PaymentScreen: React.FC = () => {
     return `${hh}:${mm}  ${dd}.${MM}.${yyyy}`;
   };
 
-  const renderCard = (
-    item: PaymentItem,
-    pageType: 'zaleglosci' | 'historia'
-  ) => {
-    const isPending = pageType === 'zaleglosci';
+  const renderCard = (item: PaymentItem) => {
+    const isPending = item.status === 'pending';
 
     return (
       <TouchableOpacity
@@ -170,6 +163,9 @@ const PaymentScreen: React.FC = () => {
     );
   };
 
+  const zaleglosci = allPayments.filter(item => item.status === 'pending');
+  const historia = allPayments.filter(item => item.status !== 'pending');
+
   return (
     <SafeAreaView style={[
       styles.container,
@@ -185,7 +181,7 @@ const PaymentScreen: React.FC = () => {
         <Text style={[
           styles.topTitle,
           { color: isDark ? "#fff" : "#333" }
-        ]}>Płatności</Text>
+        ]}>Zlecenia</Text>
         <View style={{ width: 24 }} />
       </View>
       <PagerView style={styles.pager} initialPage={0} ref={pagerRef}>
@@ -197,7 +193,7 @@ const PaymentScreen: React.FC = () => {
           <FlatList
             data={zaleglosci}
             keyExtractor={(i: PaymentItem) => i.id}
-            renderItem={({ item }) => renderCard(item, 'zaleglosci')}
+            renderItem={({ item }) => renderCard(item)}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
@@ -206,11 +202,11 @@ const PaymentScreen: React.FC = () => {
           <Text style={[
             styles.pageTitle,
             { color: isDark ? "#fff" : "#222" }
-          ]}>✅ Historia</Text>
+          ]}>✅ Opłacone</Text>
           <FlatList
             data={historia}
             keyExtractor={(i: PaymentItem) => i.id}
-            renderItem={({ item }) => renderCard(item, 'historia')}
+            renderItem={({ item }) => renderCard(item)}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
@@ -224,7 +220,7 @@ const PaymentScreen: React.FC = () => {
           <Text style={[styles.footerText, { color: isDark ? '#9fcaff' : '#007AFF' }]}>Zaległości</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => pagerRef.current?.setPage(1)}>
-          <Text style={[styles.footerText, { color: isDark ? '#9fcaff' : '#007AFF' }]}>Historia</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#9fcaff' : '#007AFF' }]}>Opłacone</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

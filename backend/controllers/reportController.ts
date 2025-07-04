@@ -90,3 +90,32 @@ export const addReport = (req: Request, res: Response) => {
     }
   );
 };
+
+export const getReportsByUser = (req: Request, res: Response) => {
+  const { userId } = req.params;
+  if (!userId) {
+    res.status(400).json({ error: 'Brak userId' });
+    return;
+  }
+
+  const sql = `
+    SELECT reports.*, orders.createdBy, orders.name AS orderName
+    FROM reports
+    JOIN orders ON reports.orderId = orders.id
+    WHERE reports.guardId = ? OR orders.createdBy = ?
+    ORDER BY reports.createdAt DESC
+  `;
+
+  db.all(sql, [userId, userId], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    const formatted = (rows as any[]).map(row => ({
+      ...row,
+      photo: row.photo ? row.photo.replace(/\\/g, '/') : null,
+      audioNote: row.audioNote ? row.audioNote.replace(/\\/g, '/') : null,
+    }));
+    res.json(formatted);
+  });
+};
