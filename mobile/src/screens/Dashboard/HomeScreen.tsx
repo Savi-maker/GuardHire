@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
+import { AuthContext } from '../../../App';
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   Image, Modal, ScrollView, Animated, Easing
@@ -21,6 +22,7 @@ const HomeScreen: React.FC = () => {
   const { theme } = useTheme();
   const { setError } = useError();
   const navigation = useNavigation<NavigationProp>();
+  const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
   const backgroundColor = theme === 'dark' ? '#303030' : '#ffffff';
   const textColor = theme === 'dark' ? '#ffffff' : '#000000';
   const [menuVisible, setMenuVisible] = useState(false);
@@ -29,7 +31,6 @@ const HomeScreen: React.FC = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsType | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   // ALERT
@@ -153,9 +154,11 @@ const HomeScreen: React.FC = () => {
       setIsLoggedIn(false);
       setUserRole(null);
       setMenuVisible(false);
-      showModal('Sukces', 'Wylogowano pomyślnie!', 'success');
+      setAlertConfig({ title: 'Sukces', message: 'Wylogowano pomyślnie!', type: 'success' });
+      setAlertVisible(true);
     } catch (error) {
-      showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.', 'error');
+      setAlertConfig({ title: 'Błąd', message: 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.', type: 'error' });
+      setAlertVisible(true);
     }
   };
 
@@ -164,18 +167,9 @@ const HomeScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor }]}>
       <View style={styles.headerContainer}>
         <Image source={require('../../../assets/images/logo.png')} style={styles.image} />
-        {isLoggedIn ? (
-          <TouchableOpacity style={styles.burger} onPress={() => setMenuVisible(true)}>
-            <Ionicons name="menu" size={28} color={textColor} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.burger, { backgroundColor: 'transparent' }]}
-            onPress={() => navigation.navigate('Login')}
-          >
-            <Text style={{ color: textColor, fontWeight: 'bold', fontSize: 16 }}>Logowanie</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.burger} onPress={() => setMenuVisible(true)}>
+          <Ionicons name="menu" size={28} color={textColor} />
+        </TouchableOpacity>
         <Text style={[styles.logoText, { color: '#ffffff' }]}>GuardHire</Text>
       </View>
 
@@ -213,7 +207,7 @@ const HomeScreen: React.FC = () => {
         role={userRole ?? undefined}
       />
 
-      <Modal transparent visible={isLoggedIn && menuVisible} animationType="none">
+  <Modal transparent visible={menuVisible} animationType="none">
         <TouchableOpacity
           style={styles.modalOverlay}
           onPress={() => setMenuVisible(false)}
@@ -238,27 +232,62 @@ const HomeScreen: React.FC = () => {
             </ScrollView>
 
             <SafeAreaView edges={['bottom']} style={styles.safeLoginContainer}>
-              <TouchableOpacity
-                style={styles.loginButton}
-                onPress={() => {
-                  if (isLoggedIn) {
-                    handleLogout();
-                  } else {
+              {isLoggedIn ? (
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={handleLogout}
+                >
+                  <Text style={[styles.loginText, { color: textColor }]}>Wyloguj</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={() => {
                     setMenuVisible(false);
-                    navigation.navigate('Login');
-                  }
-                }}
-              >
-                <Text style={[styles.loginText, { color: textColor }]}>
-                  {isLoggedIn ? 'Wyloguj' : 'Logowanie'}
-                </Text>
-              </TouchableOpacity>
+                    setIsLoggedIn(false);
+                    setAlertConfig({ title: 'Sukces', message: 'Przejście do logowania!', type: 'success' });
+                    setAlertVisible(true);
+                  }}
+                >
+                  <Text style={[styles.loginText, { color: textColor }]}>Logowanie</Text>
+                </TouchableOpacity>
+              )}
             </SafeAreaView>
           </View>
         </TouchableOpacity>
       </Modal>
       {/* ALERT */}
-      {/* ... CustomAlert, etc ... */}
+      {alertVisible && (
+        <Modal
+          transparent
+          visible={alertVisible}
+          animationType="fade"
+          onRequestClose={() => setAlertVisible(false)}
+        >
+          <View style={modalStyles.overlay}>
+            <View style={modalStyles.modalContainer}>
+              <View style={[
+                modalStyles.header,
+                alertConfig.type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
+              ]}>
+                <Text style={modalStyles.title}>{alertConfig.title}</Text>
+              </View>
+              <View style={modalStyles.body}>
+                <Text style={modalStyles.message}>{alertConfig.message}</Text>
+              </View>
+              <TouchableOpacity
+                style={[
+                  modalStyles.button,
+                  alertConfig.type === 'error' ? modalStyles.errorButton : modalStyles.successButton
+                ]}
+                onPress={() => setAlertVisible(false)}
+              >
+                <Text style={modalStyles.buttonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };

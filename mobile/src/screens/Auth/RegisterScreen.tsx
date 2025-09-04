@@ -251,13 +251,13 @@ const RegisterScreen: React.FC = () => {
       >
         <ImageBackground source={BackgroundImage} style={styles.background}>
             <SafeAreaView style={styles.container}>
-                <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => navigation.navigate('Main')}
-                    accessibilityLabel="Zamknij ekran rejestracji"
-                >
-                    <Ionicons name="close" size={30} color="#000" />
-                </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => navigation.navigate('Login')}
+          accessibilityLabel="Zamknij ekran rejestracji"
+        >
+          <Ionicons name="close" size={30} color="#000" />
+        </TouchableOpacity>
 
                 <View style={styles.contentWrapper}>
                     <View style={styles.content}>

@@ -1,5 +1,8 @@
-import React from 'react';
+
+import React, { useEffect, useState, createContext } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
+import { TouchableOpacity, Text } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import RegisterScreen from './src/screens/Auth/RegisterScreen';
@@ -21,7 +24,6 @@ import SuccessScreen from './src/screens/Feedback/SuccessScreen';
 import OrderHistoryScreen from './src/screens/History/OrderHistoryScreen';
 import HelpSupportScreen from './src/screens/Support/HelpSupportScreen';
 import { ThemeProvider } from './src/screens/ThemeContext/ThemeContext';
-import { RootStackParamList } from './src/navigation/types';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AdminPanelScreen from './src/screens/Admin/AdminPanelScreen';
@@ -31,43 +33,76 @@ import RaportScreen from './src/screens/Raport/RaportScreen';
 import AddRaportScreen from './src/screens/Raport/AddRaportScreen';
 import UserRaportScreen from './src/screens/Raport/UserRaportsScreen';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+export const AuthContext = createContext({
+  isLoggedIn: false,
+  setIsLoggedIn: (_: boolean) => {},
+});
+
+const AuthStack = createNativeStackNavigator();
+import type { RootStackParamList } from './src/navigation/types';
+const AppStack = createNativeStackNavigator<RootStackParamList>();
+
+function AuthStackScreen() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+function MainAppStackScreen() {
+  return (
+    <AppStack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
+      <AppStack.Screen name="Main" component={BottomTabNavigator} />
+      <AppStack.Screen name="UserProfile" component={UserProfileScreen} />
+      <AppStack.Screen name="EditProfile" component={EditProfileScreen} />
+      <AppStack.Screen name="Settings" component={SettingsScreen} />
+      <AppStack.Screen name="List" component={ListScreen} />
+      <AppStack.Screen name="Search" component={SearchScreen} />
+      <AppStack.Screen name="Notifications" component={NotificationsScreen} />
+      <AppStack.Screen name="Form" component={FormScreen} />
+      <AppStack.Screen name="Payment" component={PaymentScreen} options={{headerShown: true}} />
+      <AppStack.Screen name="TransactionDetails" component={TransactionDetailsScreen} options={{headerShown: true}} />
+      <AppStack.Screen name="Success" component={SuccessScreen} />
+      <AppStack.Screen name="AssignedOrders" component={AssignedOrdersScreen} />
+      <AppStack.Screen name="OrderHistory" component={OrderHistoryScreen} />
+      <AppStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+  <AppStack.Screen name="ItemDetails" component={ItemDetailsScreen} />
+      <AppStack.Screen name="AdminPanel" component={AdminPanelScreen} />
+      <AppStack.Screen name="UserRaports" component={UserRaportScreen} options={{ headerShown: true, title: 'Twoje Raporty' }} />
+      <AppStack.Screen name="Raport" component={RaportScreen} options={{ headerShown: true, title: 'Raporty' }} />
+      <AppStack.Screen name="CurrentLocation" component={CurrentLocationScreen} options={{ headerShown: true, title: 'Twoja lokalizacja' }} />
+      <AppStack.Screen name="AddRaport" component={AddRaportScreen} options={{ headerShown: true, title: 'Dodaj raport' }} />
+    </AppStack.Navigator>
+  );
+}
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem('token');
+      setIsLoggedIn(!!token);
+    };
+    checkToken();
+  }, []);
+
+  if (isLoggedIn === null) return null; // Możesz dodać loader
+
   return (
     <SafeAreaProvider>
-  <ThemeProvider>
-    <ErrorProvider>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main" component={BottomTabNavigator} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="List" component={ListScreen} />
-          <Stack.Screen name="Search" component={SearchScreen} />
-          <Stack.Screen name="Notifications" component={NotificationsScreen} />
-          <Stack.Screen name="Form" component={FormScreen} />
-          <Stack.Screen name="Payment" component={PaymentScreen} options={{headerShown: true}} />
-          <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} options={{headerShown: true}} />
-          <Stack.Screen name="Success" component={SuccessScreen} />
-          <Stack.Screen name="AssignedOrders" component={AssignedOrdersScreen} />
-          <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
-          <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
-          <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />
-          <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
-          <Stack.Screen name="UserRaports" component={UserRaportScreen} options={{ headerShown: true, title: 'Twoje Raporty' }} />
-          <Stack.Screen name="Raport" component={RaportScreen} options={{ headerShown: true, title: 'Raporty' }} />
-          <Stack.Screen name="CurrentLocation" component={CurrentLocationScreen} options={{ headerShown: true, title: 'Twoja lokalizacja' }} />
-          <Stack.Screen name="AddRaport" component={AddRaportScreen} options={{ headerShown: true, title: 'Dodaj raport' }} />
-        </Stack.Navigator>
-      </NavigationContainer>
-      <ErrorOverlay /> 
-    </ErrorProvider>
-  </ThemeProvider>
-</SafeAreaProvider>
+      <ThemeProvider>
+        <ErrorProvider>
+          <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn }}>
+            <NavigationContainer>
+              {isLoggedIn ? <MainAppStackScreen /> : <AuthStackScreen />}
+            </NavigationContainer>
+          </AuthContext.Provider>
+        </ErrorProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

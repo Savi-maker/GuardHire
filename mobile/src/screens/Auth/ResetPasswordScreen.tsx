@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator,} from 'react-native';
+import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, NavigationProp} from '@react-navigation/native';
@@ -178,8 +178,18 @@ const ResetPasswordScreen: React.FC = () => {
   };
 
   return (
-      <ImageBackground source={BackgroundImage} style={styles.background} resizeMode="cover">
-        <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ImageBackground source={BackgroundImage} style={styles.background} resizeMode="cover">
+            <SafeAreaView style={styles.container}>
           <TouchableOpacity
               style={styles.closeButton}
               onPress={() => navigation.goBack()}
@@ -300,6 +310,8 @@ const ResetPasswordScreen: React.FC = () => {
           />
         </SafeAreaView>
       </ImageBackground>
+    </ScrollView>
+  </KeyboardAvoidingView>
   );
 };
 

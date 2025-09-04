@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ImageBackground, Modal, ActivityIndicator,} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthContext } from '../../../App';
 import { Ionicons } from '@expo/vector-icons';
 import BackgroundImage from '../../../assets/images/loginScreenLogo.png';
 import { login, setToken } from '../../utils/api';
@@ -16,56 +16,53 @@ interface CustomAlertProps {
   type: 'error' | 'success';
 }
 
-type RootStackParamList = {
-  Login: undefined;
-  ResetPassword: undefined;
-  Register: undefined;
-  Main: undefined;
-};
+// type RootStackParamList = {
+//   Login: undefined;
+//   ResetPassword: undefined;
+//   Register: undefined;
+//   Main: undefined;
+// };
 
-const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, onClose, type }) => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
+const CustomAlert: React.FC<CustomAlertProps & { onSuccess?: () => void }> = ({ visible, title, message, onClose, type, onSuccess }) => {
   return (
-      <Modal
-          transparent
-          visible={visible}
-          animationType="fade"
-          onRequestClose={onClose}
-      >
-        <View style={modalStyles.overlay}>
-          <View style={modalStyles.modalContainer}>
-            <View style={[
-              modalStyles.header,
-              type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
-            ]}>
-              <Text style={modalStyles.title}>{title}</Text>
-            </View>
-            <View style={modalStyles.body}>
-              <Text style={modalStyles.message}>{message}</Text>
-            </View>
-            <TouchableOpacity
-                style={[
-                  modalStyles.button,
-                  type === 'error' ? modalStyles.errorButton : modalStyles.successButton
-                ]}
-                onPress={() => {
-                  onClose();
-                  if (type === 'success') {
-                    navigation.navigate('Main');
-                  }
-                }}
-            >
-              <Text style={modalStyles.buttonText}>OK</Text>
-            </TouchableOpacity>
+    <Modal
+      transparent
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.modalContainer}>
+          <View style={[
+            modalStyles.header,
+            type === 'error' ? modalStyles.errorHeader : modalStyles.successHeader
+          ]}>
+            <Text style={modalStyles.title}>{title}</Text>
           </View>
+          <View style={modalStyles.body}>
+            <Text style={modalStyles.message}>{message}</Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              modalStyles.button,
+              type === 'error' ? modalStyles.errorButton : modalStyles.successButton
+            ]}
+            onPress={() => {
+              onClose();
+              if (type === 'success' && onSuccess) onSuccess();
+            }}
+          >
+            <Text style={modalStyles.buttonText}>OK</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </View>
+    </Modal>
   );
 };
 
 const LoginScreen: React.FC = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
+  const { setIsLoggedIn } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [language, setLanguage] = useState<string>('pl');
@@ -87,10 +84,12 @@ const LoginScreen: React.FC = () => {
   });
 
   const handleForgotPassword = () => {
+    // @ts-ignore
     navigation.navigate('ResetPassword');
   };
 
   const handleRegisterUser = () => {
+    // @ts-ignore
     navigation.navigate('Register');
   };
 
@@ -170,7 +169,7 @@ const LoginScreen: React.FC = () => {
     } catch (e) {
     }
 
-    showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
+  showModal('Sukces', 'Logowanie zakończone powodzeniem!', 'success');
   } catch (error) {
     console.error('Błąd podczas logowania:', error);
     showModal('Błąd', 'Wystąpił nieoczekiwany błąd. Sprawdź połączenie z internetem.', 'error');
@@ -272,13 +271,14 @@ const LoginScreen: React.FC = () => {
             </Picker>
           </View>
 
-          <CustomAlert
-              visible={modalVisible}
-              title={modalConfig.title}
-              message={modalConfig.message}
-              type={modalConfig.type}
-              onClose={() => setModalVisible(false)}
-          />
+      <CustomAlert
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onClose={() => setModalVisible(false)}
+        onSuccess={() => setIsLoggedIn(true)}
+      />
         </SafeAreaView>
       </ImageBackground>
   );
